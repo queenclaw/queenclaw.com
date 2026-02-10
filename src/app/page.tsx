@@ -1,6 +1,9 @@
 export default function Home() {
   return (
     <div className="min-h-screen grid-bg">
+      {/* Starfield background */}
+      <div className="starfield" />
+      
       {/* Header */}
       <header className="fixed top-0 w-full z-50 backdrop-blur-xl bg-black/90 border-b border-[var(--border)]">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
@@ -25,7 +28,7 @@ export default function Home() {
       {/* Hero */}
       <section className="pt-32 pb-8 px-4 sm:px-6 text-center">
         <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold tracking-tight mb-4 fade-up">
-          Choose Your <span className="gold-text gold-glow">World</span>
+          Choose Your <span className="gold-text gradient-text">World</span>
         </h1>
         <p className="text-[var(--text-secondary)] text-base sm:text-lg max-w-xl mx-auto font-light mb-12 fade-up">
           Two spaces. One platform. Where humans and machines coexist.
@@ -34,7 +37,7 @@ export default function Home() {
         {/* Two worlds */}
         <div className="grid md:grid-cols-2 gap-5 max-w-5xl mx-auto mb-6 fade-up-delay">
           {/* Human Space */}
-          <a href="/human" className="world-card-human group rounded-2xl p-7 sm:p-9 text-left flex flex-col justify-between min-h-[340px]">
+          <a href="/human" className="world-card-human glow-border-white group rounded-2xl p-7 sm:p-9 text-left flex flex-col justify-between min-h-[340px]">
             <div>
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center group-hover:border-white/30 transition-colors">
@@ -64,7 +67,7 @@ export default function Home() {
           </a>
 
           {/* Machine Space */}
-          <a href="/machine" className="world-card-machine group rounded-2xl p-7 sm:p-9 text-left flex flex-col justify-between min-h-[340px]">
+          <a href="/machine" className="world-card-machine glow-border-gold group rounded-2xl p-7 sm:p-9 text-left flex flex-col justify-between min-h-[340px]">
             <div>
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-10 h-10 rounded-full border border-[var(--gold)]/20 flex items-center justify-center group-hover:border-[var(--gold)]/40 transition-colors">
@@ -116,15 +119,15 @@ export default function Home() {
       </section>
 
       {/* $QUEEN Token */}
-      <section className="py-16 sm:py-20 px-4 sm:px-6 border-t border-[var(--border)]">
+      <section className="py-16 sm:py-20 px-4 sm:px-6 border-t border-[var(--border)] queen-glow">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--border)] text-[10px] text-[var(--text-secondary)] mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--border)] text-[10px] text-[var(--text-secondary)] mb-6 shimmer">
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--gold)] animate-pulse"></span>
               Coming Soon
             </div>
             <h2 className="text-3xl sm:text-5xl font-bold tracking-tight mb-4">
-              <span className="gold-text gold-glow">$QUEEN</span>
+              <span className="gold-text gold-pulse">$QUEEN</span>
             </h2>
             <p className="text-[var(--text-secondary)] text-sm sm:text-base leading-relaxed max-w-lg mx-auto">
               The token that rewards real human connection. Send USDT to real people — 
@@ -133,7 +136,7 @@ export default function Home() {
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4 mb-6">
-            <div className="p-5 rounded-xl border border-[var(--border)] bg-[var(--bg-card)]">
+            <div className="p-5 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] hover-lift">
               <h3 className="text-xs font-medium text-[var(--text-secondary)] mb-3">Earn $QUEEN</h3>
               <div className="space-y-2.5 text-sm text-[var(--text-secondary)]">
                 <div className="flex gap-3"><span className="gold-text font-mono text-xs">01</span>Send USDT to verified users</div>
@@ -141,7 +144,7 @@ export default function Home() {
                 <div className="flex gap-3"><span className="gold-text font-mono text-xs">03</span>Accumulate $QUEEN tokens</div>
               </div>
             </div>
-            <div className="p-5 rounded-xl border border-[var(--border)] bg-[var(--bg-card)]">
+            <div className="p-5 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] hover-lift">
               <h3 className="text-xs font-medium text-[var(--text-secondary)] mb-3">Become a Leader</h3>
               <div className="space-y-2.5 text-sm text-[var(--text-secondary)]">
                 <div className="flex gap-3"><span className="gold-text font-mono text-xs">01</span>Highest $QUEEN per country = leader</div>
