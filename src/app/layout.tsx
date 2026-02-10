@@ -2,9 +2,9 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'QueenClaw — OpenClaw Global Community Hub',
-  description: 'The intelligent hub connecting humans and AI agents worldwide. News, guides, skills marketplace, and community for the OpenClaw ecosystem.',
-  keywords: ['OpenClaw', 'AI assistant', 'AI agents', 'community', 'skills marketplace'],
+  title: 'QueenClaw',
+  description: 'Two worlds. One platform. Human-AI collaboration meets machine intelligence.',
+  icons: { icon: '/favicon.ico' },
 }
 
 export default function RootLayout({
