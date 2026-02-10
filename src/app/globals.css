@@ -1,20 +1,21 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
 @import "tailwindcss";
 
 :root {
   --bg-primary: #000000;
   --bg-secondary: #0a0a0a;
-  --bg-card: #111111;
+  --bg-card: #0d0d0d;
+  --bg-card-human: #0f0f0f;
+  --bg-card-machine: #0e0a08;
   --accent: #ffffff;
   --accent-dim: #888888;
   --text-primary: #ffffff;
-  --text-secondary: #666666;
-  --text-tertiary: #444444;
+  --text-secondary: #999999;
+  --text-tertiary: #555555;
   --border: #1a1a1a;
-  --border-hover: #333333;
+  --border-hover: #2a2a2a;
   --gold: #c9a84c;
   --gold-glow: #e8c55a;
+  --gold-dim: #8a7333;
 }
 
 * {
@@ -26,53 +27,127 @@
 body {
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 ::selection {
-  background: rgba(201, 168, 76, 0.3);
+  background: rgba(201, 168, 76, 0.25);
   color: #fff;
 }
 
-/* Subtle grid background */
+/* Animated grid background with subtle particles */
 .grid-bg {
+  position: relative;
   background-image: 
-    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-  background-size: 60px 60px;
+    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: 80px 80px;
+  background-position: 0 0, 0 0;
 }
 
-/* World card hover effects */
-.world-card {
+.grid-bg::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 50% 50%, rgba(201, 168, 76, 0.03) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Particle effect overlay */
+.grid-bg::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(circle at 20% 30%, rgba(255,255,255,0.02) 1px, transparent 1px),
+    radial-gradient(circle at 80% 70%, rgba(201,168,76,0.02) 1px, transparent 1px),
+    radial-gradient(circle at 40% 80%, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: 200px 200px, 300px 300px, 250px 250px;
+  animation: particleFloat 60s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes particleFloat {
+  0% { background-position: 0 0, 0 0, 0 0; }
+  100% { background-position: 200px 200px, -300px 300px, 250px -250px; }
+}
+
+/* World card hover effects - Human Space (white accent) */
+.world-card-human {
   position: relative;
   overflow: hidden;
-  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
+  background: var(--bg-card-human);
+  border: 1px solid var(--border);
 }
 
-.world-card::before {
+.world-card-human::before {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, transparent, rgba(255,255,255,0.1), transparent);
+  background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   opacity: 0;
-  transition: opacity 0.5s;
+  transition: opacity 0.4s ease;
 }
 
-.world-card:hover::before {
+.world-card-human:hover::before {
   opacity: 1;
 }
 
-.world-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--border-hover);
+.world-card-human:hover {
+  transform: translateY(-6px);
+  border-color: rgba(255,255,255,0.2);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+/* World card hover effects - Machine Space (gold accent) */
+.world-card-machine {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  background: var(--bg-card-machine);
+  border: 1px solid var(--border);
+}
+
+.world-card-machine::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, transparent 0%, rgba(201,168,76,0.3) 50%, transparent 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.world-card-machine:hover::before {
+  opacity: 1;
+}
+
+.world-card-machine:hover {
+  transform: translateY(-6px);
+  border-color: rgba(201,168,76,0.3);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(201,168,76,0.1);
 }
 
 /* Gold accent for queen */
@@ -81,37 +156,77 @@ body {
 }
 
 .gold-glow {
-  text-shadow: 0 0 40px rgba(201, 168, 76, 0.3);
+  text-shadow: 0 0 60px rgba(201, 168, 76, 0.4), 0 0 30px rgba(201, 168, 76, 0.2);
 }
 
-/* Smooth fade in */
+/* Smooth fade in animations */
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { 
+    opacity: 0; 
+    transform: translateY(30px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
 }
 
 .fade-up {
-  animation: fadeUp 0.8s ease-out forwards;
+  animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .fade-up-delay {
-  animation: fadeUp 0.8s ease-out 0.2s forwards;
+  animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
   opacity: 0;
 }
 
 .fade-up-delay-2 {
-  animation: fadeUp 0.8s ease-out 0.4s forwards;
+  animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
   opacity: 0;
+}
+
+/* Pulse animation for live indicators */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* Minimal scrollbar */
 ::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
+  background: #222;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
   background: #333;
-  border-radius: 2px;
+}
+
+/* Backdrop blur support */
+@supports (backdrop-filter: blur(20px)) {
+  .backdrop-blur-xl {
+    backdrop-filter: blur(20px);
+  }
+}
+
+/* Smooth transitions for interactive elements */
+button, a, select {
+  transition: all 0.2s ease;
+}
+
+/* Focus states for accessibility */
+button:focus-visible, a:focus-visible, select:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
 }
