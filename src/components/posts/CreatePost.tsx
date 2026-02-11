@@ -3,17 +3,33 @@
 import { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Image, Send } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { useUser } from '@/hooks/useUser';
 
 export function CreatePost() {
   const { publicKey } = useWallet();
+  const { user } = useUser();
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!content.trim() || !publicKey) return;
+    if (!content.trim() || !publicKey || !user) return;
+    
     setLoading(true);
-    // TODO: Submit to Supabase
-    setContent('');
+    
+    const { error } = await supabase
+      .from('posts')
+      .insert({
+        user_id: user.id,
+        content: content.trim(),
+      });
+
+    if (error) {
+      console.error('Failed to create post:', error);
+    } else {
+      setContent('');
+    }
+    
     setLoading(false);
   };
 
