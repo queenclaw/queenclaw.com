@@ -1,12 +1,33 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Heart, MessageCircle, Repeat2, Share, Sparkles } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
+import { supabase, type Post, type User } from '@/lib/supabase';
 
-// Mock data for posts
+// 从 Supabase 获取帖子
+async function fetchPosts(): Promise<(Post & { user: User })[]> {
+  const { data, error } = await supabase
+    .from('posts')
+    .select(`
+      *,
+      user:users(*)
+    `)
+    .order('created_at', { ascending: false })
+    .limit(20);
+  
+  if (error) {
+    console.error('Error fetching posts:', error);
+    return [];
+  }
+  
+  return data || [];
+}
+
+// 示例数据（当数据库为空时使用）
 const mockPosts = [
   {
-    id: 1,
+    id: '1',
     author: 'Sarah Chen',
     username: '@sarahchen',
     avatar: 'SC',
@@ -18,7 +39,7 @@ const mockPosts = [
     hasAI: true,
   },
   {
-    id: 2,
+    id: '2',
     author: 'Marcus Johnson',
     username: '@marcusj',
     avatar: 'MJ',
@@ -30,7 +51,7 @@ const mockPosts = [
     hasAI: true,
   },
   {
-    id: 3,
+    id: '3',
     author: 'Elena Rodriguez',
     username: '@elenarodriguez',
     avatar: 'ER',
@@ -39,30 +60,6 @@ const mockPosts = [
     likes: 445,
     comments: 78,
     retweets: 123,
-    hasAI: false,
-  },
-  {
-    id: 4,
-    author: 'David Kim',
-    username: '@davidkim',
-    avatar: 'DK',
-    time: '8h ago',
-    content: 'Teaching my daughter to code today. She built her first website at age 9. The next generation is going to be incredible. 💻',
-    likes: 1203,
-    comments: 234,
-    retweets: 456,
-    hasAI: true,
-  },
-  {
-    id: 5,
-    author: 'Aisha Patel',
-    username: '@aishapatel',
-    avatar: 'AP',
-    time: '10h ago',
-    content: 'Reminder: Your mental health is just as important as your productivity. Take breaks. Touch grass. Be human. 🌱',
-    likes: 2341,
-    comments: 567,
-    retweets: 890,
     hasAI: false,
   },
 ];
@@ -81,6 +78,27 @@ const suggestedUsers = [
 ];
 
 export default function HumanSpace() {
+  const [posts, setPosts] = useState<(Post & { user: User })[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPosts().then(data => {
+      setPosts(data);
+      setLoading(false);
+    });
+  }, []);
+
+  // 格式化时间
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    if (hours < 1) return 'Just now';
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+  };
+
   return (
     <div className="min-h-screen bg-black text-white">
       <Navbar lang="en" />
@@ -128,70 +146,135 @@ export default function HumanSpace() {
 
             {/* Feed */}
             <div className="space-y-4">
-              {mockPosts.map((post) => (
-                <article
-                  key={post.id}
-                  className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 hover:bg-white/[0.03] hover:border-white/[0.1] transition-all duration-200"
-                >
-                  <div className="flex gap-4">
-                    {/* Avatar */}
-                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-sm font-medium flex-shrink-0">
-                      {post.avatar}
-                    </div>
+              {loading ? (
+                <div className="text-center py-12 text-white/50">
+                  <div className="animate-spin w-8 h-8 border-2 border-white/20 border-t-white rounded-full mx-auto mb-4" />
+                  Loading posts...
+                </div>
+              ) : posts.length > 0 ? (
+                posts.map((post) => (
+                  <article
+                    key={post.id}
+                    className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 hover:bg-white/[0.03] hover:border-white/[0.1] transition-all duration-200"
+                  >
+                    <div className="flex gap-4">
+                      {/* Avatar */}
+                      <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-sm font-medium flex-shrink-0">
+                        {post.user?.username?.slice(0, 2).toUpperCase() || post.user?.wallet_address.slice(2, 4).toUpperCase() || '??'}
+                      </div>
 
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-semibold">{post.author}</h3>
-                            {post.hasAI && (
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold">{post.user?.username || 'Anonymous'}</h3>
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/5 border border-white/10 rounded-full text-xs text-white/70">
                                 <Sparkles className="w-3 h-3" />
                                 AI
                               </span>
-                            )}
+                            </div>
+                            <p className="text-sm text-white/50">
+                              @{post.user?.username || 'user'} · {formatTime(post.created_at)}
+                            </p>
                           </div>
-                          <p className="text-sm text-white/50">
-                            {post.username} · {post.time}
-                          </p>
+                        </div>
+
+                        <p className="text-white/90 mb-4 leading-relaxed">
+                          {post.content}
+                        </p>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-8 text-white/50">
+                          <button className="flex items-center gap-2 hover:text-white transition-colors group">
+                            <div className="p-2 rounded-full group-hover:bg-white/5 transition-colors">
+                              <MessageCircle className="w-4 h-4" />
+                            </div>
+                            <span className="text-sm">{post.comments_count}</span>
+                          </button>
+                          <button className="flex items-center gap-2 hover:text-white transition-colors group">
+                            <div className="p-2 rounded-full group-hover:bg-white/5 transition-colors">
+                              <Repeat2 className="w-4 h-4" />
+                            </div>
+                            <span className="text-sm">0</span>
+                          </button>
+                          <button className="flex items-center gap-2 hover:text-white transition-colors group">
+                            <div className="p-2 rounded-full group-hover:bg-white/5 transition-colors">
+                              <Heart className="w-4 h-4" />
+                            </div>
+                            <span className="text-sm">{post.likes_count}</span>
+                          </button>
+                          <button className="flex items-center gap-2 hover:text-white transition-colors group ml-auto">
+                            <div className="p-2 rounded-full group-hover:bg-white/5 transition-colors">
+                              <Share className="w-4 h-4" />
+                            </div>
+                          </button>
                         </div>
                       </div>
-
-                      <p className="text-white/90 mb-4 leading-relaxed">
-                        {post.content}
-                      </p>
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-8 text-white/50">
-                        <button className="flex items-center gap-2 hover:text-white transition-colors group">
-                          <div className="p-2 rounded-full group-hover:bg-white/5 transition-colors">
-                            <MessageCircle className="w-4 h-4" />
+                    </div>
+                  </article>
+                ))
+              ) : (
+                // 使用示例数据
+                mockPosts.map((post) => (
+                  <article
+                    key={post.id}
+                    className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 hover:bg-white/[0.03] hover:border-white/[0.1] transition-all duration-200"
+                  >
+                    <div className="flex gap-4">
+                      <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-sm font-medium flex-shrink-0">
+                        {post.avatar}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold">{post.author}</h3>
+                              {post.hasAI && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/5 border border-white/10 rounded-full text-xs text-white/70">
+                                  <Sparkles className="w-3 h-3" />
+                                  AI
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-white/50">
+                              {post.username} · {post.time}
+                            </p>
                           </div>
-                          <span className="text-sm">{post.comments}</span>
-                        </button>
-                        <button className="flex items-center gap-2 hover:text-white transition-colors group">
-                          <div className="p-2 rounded-full group-hover:bg-white/5 transition-colors">
-                            <Repeat2 className="w-4 h-4" />
-                          </div>
-                          <span className="text-sm">{post.retweets}</span>
-                        </button>
-                        <button className="flex items-center gap-2 hover:text-white transition-colors group">
-                          <div className="p-2 rounded-full group-hover:bg-white/5 transition-colors">
-                            <Heart className="w-4 h-4" />
-                          </div>
-                          <span className="text-sm">{post.likes}</span>
-                        </button>
-                        <button className="flex items-center gap-2 hover:text-white transition-colors group ml-auto">
-                          <div className="p-2 rounded-full group-hover:bg-white/5 transition-colors">
-                            <Share className="w-4 h-4" />
-                          </div>
-                        </button>
+                        </div>
+                        <p className="text-white/90 mb-4 leading-relaxed">
+                          {post.content}
+                        </p>
+                        <div className="flex items-center gap-8 text-white/50">
+                          <button className="flex items-center gap-2 hover:text-white transition-colors group">
+                            <div className="p-2 rounded-full group-hover:bg-white/5 transition-colors">
+                              <MessageCircle className="w-4 h-4" />
+                            </div>
+                            <span className="text-sm">{post.comments}</span>
+                          </button>
+                          <button className="flex items-center gap-2 hover:text-white transition-colors group">
+                            <div className="p-2 rounded-full group-hover:bg-white/5 transition-colors">
+                              <Repeat2 className="w-4 h-4" />
+                            </div>
+                            <span className="text-sm">{post.retweets}</span>
+                          </button>
+                          <button className="flex items-center gap-2 hover:text-white transition-colors group">
+                            <div className="p-2 rounded-full group-hover:bg-white/5 transition-colors">
+                              <Heart className="w-4 h-4" />
+                            </div>
+                            <span className="text-sm">{post.likes}</span>
+                          </button>
+                          <button className="flex items-center gap-2 hover:text-white transition-colors group ml-auto">
+                            <div className="p-2 rounded-full group-hover:bg-white/5 transition-colors">
+                              <Share className="w-4 h-4" />
+                            </div>
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                ))
+              )}
             </div>
           </div>
 
