@@ -5,7 +5,12 @@ import { WalletContextProvider } from '@/components/wallet/WalletContextProvider
 import { ConnectWalletButton } from '@/components/wallet/ConnectWalletButton';
 import { FeedPage } from '@/app/[lang]/feed/FeedPage';
 import { ProfilePage } from '@/app/[lang]/profile/ProfilePage';
+import { ExplorePage } from '@/app/[lang]/explore/ExplorePage';
+import { NotificationsPage } from '@/app/[lang]/notifications/NotificationsPage';
 import { Home, User, Bell, Search } from 'lucide-react';
+
+// Mock unread count - in production this would come from Supabase
+const UNREAD_NOTIFICATIONS = 3;
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [activeTab, setActiveTab] = useState('home');
@@ -46,7 +51,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     activeTab === 'notifications' ? 'text-white' : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  <Bell size={20} />
+                  <div className="relative">
+                    <Bell size={20} />
+                    {UNREAD_NOTIFICATIONS > 0 && activeTab !== 'notifications' && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs flex items-center justify-center">
+                        {UNREAD_NOTIFICATIONS}
+                      </span>
+                    )}
+                  </div>
                   Notifications
                 </button>
                 <button 
@@ -103,7 +115,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                       : 'text-gray-400 hover:bg-white/5 hover:text-white'
                   }`}
                 >
-                  <Bell size={24} />
+                  <div className="relative">
+                    <Bell size={24} />
+                    {UNREAD_NOTIFICATIONS > 0 && activeTab !== 'notifications' && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs flex items-center justify-center">
+                        {UNREAD_NOTIFICATIONS}
+                      </span>
+                    )}
+                  </div>
                   <span className="text-lg">Notifications</span>
                 </button>
                 
@@ -125,12 +144,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="flex-1 min-w-0 border-x border-white/10">
               {activeTab === 'home' && <FeedPage />}
               {activeTab === 'profile' && <ProfilePage />}
-              {activeTab === 'explore' && (
-                <div className="p-8 text-center text-gray-500">Explore coming soon</div>
-              )}
-              {activeTab === 'notifications' && (
-                <div className="p-8 text-center text-gray-500">No notifications yet</div>
-              )}
+              {activeTab === 'explore' && <ExplorePage />}
+              {activeTab === 'notifications' && <NotificationsPage />}
             </div>
             
             {/* Right Sidebar - Trending */}
