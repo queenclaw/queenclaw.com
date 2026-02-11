@@ -1,28 +1,31 @@
 'use client';
 
-import { useWallet, useWalletModal } from '@solana/wallet-adapter-react';
+import { useState } from 'react';
 import { Wallet } from 'lucide-react';
 
 export function ConnectWalletButton() {
-  const { publicKey, connected, disconnect } = useWallet();
-  const { setVisible } = useWalletModal();
+  const [connected, setConnected] = useState(false);
+  const [walletAddress, setWalletAddress] = useState('');
 
   const handleClick = () => {
     if (connected) {
-      disconnect();
+      setConnected(false);
+      setWalletAddress('');
     } else {
-      setVisible(true);
+      // Mock connection
+      setWalletAddress('0x1234...5678');
+      setConnected(true);
     }
   };
 
   return (
     <button
       onClick={handleClick}
-      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full text-white font-medium hover:opacity-90 transition-opacity"
+      className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-full font-medium hover:bg-white/90 transition-opacity"
     >
       <Wallet size={18} />
       {connected 
-        ? `${publicKey?.toString().slice(0, 4)}...${publicKey?.toString().slice(-4)}`
+        ? walletAddress
         : 'Connect Wallet'
       }
     </button>

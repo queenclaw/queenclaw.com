@@ -1,31 +1,40 @@
 'use client';
 
 import { useState } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { useUser } from '@/hooks/useUser';
-import { Settings, User, Bell, Shield } from 'lucide-react';
+import { User, Bell, Shield, Wallet } from 'lucide-react';
 
 export function SettingsPage() {
-  const { publicKey } = useWallet();
-  const { user, loading } = useUser();
   const [activeTab, setActiveTab] = useState('profile');
   const [saving, setSaving] = useState(false);
+  const [walletConnected, setWalletConnected] = useState(false);
 
   const [formData, setFormData] = useState({
-    username: user?.username || '',
-    bio: user?.bio || '',
+    username: '',
+    bio: '',
   });
 
   const handleSave = async () => {
     setSaving(true);
-    // TODO: Save to Supabase
     setTimeout(() => setSaving(false), 1000);
   };
 
-  if (!publicKey) {
+  const connectWallet = () => {
+    setWalletConnected(true);
+  };
+
+  if (!walletConnected) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-12 text-center">
-        <p className="text-gray-400">Connect your wallet to access settings</p>
+        <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-8">
+          <Wallet className="w-12 h-12 text-white/40 mx-auto mb-4" />
+          <p className="text-white/60 mb-6">Connect your wallet to access settings</p>
+          <button 
+            onClick={connectWallet}
+            className="px-6 py-3 bg-white text-black rounded-full font-medium hover:bg-white/90 transition-colors"
+          >
+            Connect Wallet
+          </button>
+        </div>
       </div>
     );
   }
@@ -100,7 +109,7 @@ export function SettingsPage() {
           <div className="flex items-center justify-between py-4 border-b border-white/10">
             <div>
               <h3 className="text-white font-medium">Wallet Address</h3>
-              <p className="text-gray-400 text-sm font-mono">{publicKey.toString()}</p>
+              <p className="text-gray-400 text-sm font-mono">0x1234...5678</p>
             </div>
             <span className="text-green-400 text-sm">Connected</span>
           </div>

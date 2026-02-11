@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Heart, MessageCircle, Share2 } from 'lucide-react';
+import { Heart, MessageCircle, Share } from 'lucide-react';
 import { LikeButton } from '../interactions/LikeButton';
 
 interface PostCardProps {
@@ -53,7 +53,7 @@ export function PostCard({ post }: { post: PostCardProps }) {
             </button>
             
             <button className="flex items-center gap-1 hover:text-green-400 transition-colors">
-              <Share2 size={18} />
+              <Share size={18} />
             </button>
           </div>
         </div>

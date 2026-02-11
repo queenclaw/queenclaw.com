@@ -1,22 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
 import { supabase } from '@/lib/supabase';
 
-export function useUser() {
-  const { publicKey } = useWallet();
+export function useUser(walletAddress?: string) {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!publicKey) {
+    if (!walletAddress) {
       setUser(null);
       setLoading(false);
       return;
     }
-
-    const walletAddress = publicKey.toString();
 
     const fetchOrCreateUser = async () => {
       // Try to fetch existing user
@@ -45,7 +41,7 @@ export function useUser() {
     };
 
     fetchOrCreateUser();
-  }, [publicKey]);
+  }, [walletAddress]);
 
   return { user, loading };
 }

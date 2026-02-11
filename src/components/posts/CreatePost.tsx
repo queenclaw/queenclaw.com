@@ -1,60 +1,60 @@
 'use client';
 
 import { useState } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
 import { Image, Send } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { useUser } from '@/hooks/useUser';
 
 export function CreatePost() {
-  const { publicKey } = useWallet();
-  const { user } = useUser();
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
+  const [walletConnected, setWalletConnected] = useState(false);
 
   const handleSubmit = async () => {
-    if (!content.trim() || !publicKey || !user) return;
+    if (!content.trim()) return;
     
     setLoading(true);
     
-    const { error } = await supabase
-      .from('posts')
-      .insert({
-        user_id: user.id,
-        content: content.trim(),
-      });
-
-    if (error) {
-      console.error('Failed to create post:', error);
-    } else {
+    // Mock submission
+    setTimeout(() => {
       setContent('');
-    }
-    
-    setLoading(false);
+      setLoading(false);
+    }, 500);
   };
 
-  if (!publicKey) return null;
+  if (!walletConnected) {
+    return (
+      <div className="bg-white/[0.02] rounded-xl p-4 mb-4 border border-white/[0.06] text-center">
+        <p className="text-white/50 mb-3">Connect wallet to create posts</p>
+        <button 
+          onClick={() => setWalletConnected(true)}
+          className="px-4 py-2 bg-white text-black rounded-full text-sm font-medium"
+        >
+          Connect Wallet
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-white/5 rounded-xl p-4 mb-4 border border-white/10">
+    <div className="bg-white/[0.02] rounded-xl p-4 mb-4 border border-white/[0.06]">
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
         placeholder="What's happening?"
         maxLength={280}
-        className="w-full bg-transparent text-white placeholder-gray-500 resize-none outline-none"
+        className="w-full bg-transparent text-white placeholder-white/30 resize-none outline-none"
         rows={3}
       />
       <div className="flex justify-between items-center mt-3">
-        <button className="text-purple-400 hover:text-purple-300 transition-colors">
+        <button className="text-[#c9a84c] hover:text-[#e8c55a] transition-colors">
           <Image size={20} />
         </button>
         <div className="flex items-center gap-3">
-          <span className="text-gray-500 text-sm">{content.length}/280</span>
+          <span className="text-white/40 text-sm">{content.length}/280</span>
           <button
             onClick={handleSubmit}
             disabled={loading || !content.trim()}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full text-white font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
+            className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-full font-medium disabled:opacity-50 hover:bg-white/90 transition-opacity"
           >
             <Send size={16} />
             {loading ? 'Posting...' : 'Post'}

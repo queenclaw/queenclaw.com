@@ -19,7 +19,7 @@ export function PostFeed() {
     // Real-time subscription
     const subscription = supabase
       .channel('posts')
-      .on('INSERT', (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, (payload) => {
         setPosts(prev => [payload.new, ...prev]);
       })
       .subscribe();
