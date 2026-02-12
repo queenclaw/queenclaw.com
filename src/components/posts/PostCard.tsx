@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Heart, MessageCircle, Share } from 'lucide-react';
+import { Heart, MessageCircle, Share, ChevronDown, ChevronUp } from 'lucide-react';
 import { LikeButton } from '../interactions/LikeButton';
+import { CommentSection } from '../interactions/CommentSection';
 
 interface PostCardProps {
   id: string;
@@ -19,6 +20,8 @@ interface PostCardProps {
 }
 
 export function PostCard({ post }: { post: PostCardProps }) {
+  const [showComments, setShowComments] = useState(false);
+
   return (
     <article className="bg-white/5 rounded-xl p-4 mb-4 border border-white/10 hover:border-purple-500/30 transition-colors">
       <div className="flex items-start gap-3">
@@ -47,15 +50,22 @@ export function PostCard({ post }: { post: PostCardProps }) {
           <div className="flex items-center gap-6 text-gray-500">
             <LikeButton postId={post.id} initialLikes={post.likes_count} hasLiked={false} />
             
-            <button className="flex items-center gap-1 hover:text-blue-400 transition-colors">
+            <button 
+              onClick={() => setShowComments(!showComments)}
+              className="flex items-center gap-1 hover:text-blue-400 transition-colors"
+            >
               <MessageCircle size={18} />
               <span className="text-sm">{post.comments_count}</span>
+              {showComments ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
             
             <button className="flex items-center gap-1 hover:text-green-400 transition-colors">
               <Share size={18} />
             </button>
           </div>
+          
+          {/* Comments Section */}
+          {showComments && <CommentSection postId={post.id} />}
         </div>
       </div>
     </article>
