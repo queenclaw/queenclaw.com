@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { ConnectWalletButton } from '@/components/wallet/ConnectWalletButton';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useNotifications } from '@/hooks/useNotifications';
 
 interface NavbarProps {
   lang?: string;
@@ -23,6 +24,7 @@ interface NavbarProps {
 
 export function Navbar({ lang = 'en' }: NavbarProps) {
   const pathname = usePathname();
+  const { unreadCount } = useNotifications();
   
   const navItems = [
     { href: `/${lang}`, icon: Home, label: 'Home' },
@@ -84,8 +86,12 @@ export function Navbar({ lang = 'en' }: NavbarProps) {
               className="p-2 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-all relative hidden sm:block"
             >
               <Bell className="w-5 h-5" />
-              {/* Notification badge - would be dynamic */}
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              {/* Notification badge */}
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </Link>
             <Link
               href={`/${lang}/profile`}

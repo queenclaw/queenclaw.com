@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   Download,
   Settings,
@@ -581,28 +580,26 @@ GOOGLE_API_KEY=your_google_key`}</code></pre>
             <Progress value={((currentStep + 1) / steps.length) * 100} className="h-2" />
             <p className="text-center text-sm text-muted-foreground mt-2">{t.progress} {currentStep + 1} {t.of} {steps.length}</p>
           </div>
-          <AnimatePresence mode="wait">
-            <motion.div key={currentStep} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    {(() => { const Icon = steps[currentStep].icon; return <Icon className="w-5 h-5" />; })()}
-                    {currentStep === 0 && t.download.title}
-                    {currentStep === 1 && t.configure.title}
-                    {currentStep === 2 && t.apis.title}
-                    {currentStep === 3 && t.launch.title}
-                  </CardTitle>
-                  <p className="text-muted-foreground">
-                    {currentStep === 0 && t.download.description}
-                    {currentStep === 1 && t.configure.description}
-                    {currentStep === 2 && t.apis.description}
-                    {currentStep === 3 && t.launch.description}
-                  </p>
-                </CardHeader>
-                <CardContent>{renderStepContent()}</CardContent>
-              </Card>
-            </motion.div>
-          </AnimatePresence>
+          <div key={currentStep} className="transition-all duration-200">
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  {(() => { const Icon = steps[currentStep].icon; return <Icon className="w-5 h-5" />; })()}
+                  {currentStep === 0 && t.download.title}
+                  {currentStep === 1 && t.configure.title}
+                  {currentStep === 2 && t.apis.title}
+                  {currentStep === 3 && t.launch.title}
+                </CardTitle>
+                <p className="text-muted-foreground">
+                  {currentStep === 0 && t.download.description}
+                  {currentStep === 1 && t.configure.description}
+                  {currentStep === 2 && t.apis.description}
+                  {currentStep === 3 && t.launch.description}
+                </p>
+              </CardHeader>
+              <CardContent>{renderStepContent()}</CardContent>
+            </Card>
+          </div>
           <div className="flex justify-between">
             <Button variant="outline" onClick={() => setCurrentStep((prev) => Math.max(0, prev - 1))} disabled={currentStep === 0}>
               <ChevronLeft className="w-4 h-4 mr-2" />{t.back}

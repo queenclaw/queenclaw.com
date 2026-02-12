@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { 
   Heart, 
   MessageCircle, 
@@ -9,88 +9,15 @@ import {
   DollarSign, 
   Trophy,
   Check,
-  Settings
+  Settings,
+  Trash2,
+  Bell,
+  Loader2
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
-
-type NotificationType = 'like' | 'comment' | 'follow' | 'mention' | 'payout' | 'achievement';
-
-interface Notification {
-  id: string;
-  type: NotificationType;
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
-  actor?: {
-    name: string;
-    avatar: string;
-  };
-  data?: {
-    amount?: string;
-    postPreview?: string;
-    achievement?: string;
-  };
-}
-
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'like',
-    title: 'New Like',
-    message: 'Sarah Chen liked your post',
-    time: '2m ago',
-    read: false,
-    actor: { name: 'Sarah Chen', avatar: 'SC' },
-    data: { postPreview: 'Just launched my new startup! Building the future...' },
-  },
-  {
-    id: '2',
-    type: 'comment',
-    title: 'New Comment',
-    message: 'Marcus Johnson commented on your post',
-    time: '15m ago',
-    read: false,
-    actor: { name: 'Marcus Johnson', avatar: 'MJ' },
-    data: { postPreview: 'The intersection of AI and human creativity...' },
-  },
-  {
-    id: '3',
-    type: 'follow',
-    title: 'New Follower',
-    message: 'Elena Rodriguez started following you',
-    time: '1h ago',
-    read: true,
-    actor: { name: 'Elena Rodriguez', avatar: 'ER' },
-  },
-  {
-    id: '4',
-    type: 'payout',
-    title: 'USDT Received',
-    message: 'You received a payout from QUEEN agent',
-    time: '2h ago',
-    read: false,
-    data: { amount: '50.00' },
-  },
-  {
-    id: '5',
-    type: 'achievement',
-    title: 'Achievement Unlocked',
-    message: 'You reached 1,000 followers!',
-    time: '1d ago',
-    read: true,
-    data: { achievement: 'Rising Star' },
-  },
-  {
-    id: '6',
-    type: 'mention',
-    title: 'Mentioned You',
-    message: 'David Kim mentioned you in a post',
-    time: '2d ago',
-    read: true,
-    actor: { name: 'David Kim', avatar: 'DK' },
-  },
-];
+import { useNotifications, NotificationType } from '@/hooks/useNotifications';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { Wallet } from 'lucide-react';
+import Link from 'next/link';
 
 const notificationIcons: Record<NotificationType, React.ReactNode> = {
   like: <Heart className="w-5 h-5 text-pink-400" />,
@@ -99,6 +26,8 @@ const notificationIcons: Record<NotificationType, React.ReactNode> = {
   mention: <Bot className="w-5 h-5 text-purple-400" />,
   payout: <DollarSign className="w-5 h-5 text-green-400" />,
   achievement: <Trophy className="w-5 h-5 text-yellow-400" />,
+  post: <Bell className="w-5 h-5 text-blue-400" />,
+  system: <Bell className="w-5 h-5 text-gray-400" />,
 };
 
 const notificationColors: Record<NotificationType, string> = {
@@ -108,29 +37,74 @@ const notificationColors: Record<NotificationType, string> = {
   mention: 'bg-purple-500/10 border-purple-500/20',
   payout: 'bg-green-500/10 border-green-500/20',
   achievement: 'bg-yellow-500/10 border-yellow-500/20',
+  post: 'bg-blue-500/10 border-blue-500/20',
+  system: 'bg-gray-500/10 border-gray-500/20',
 };
 
-export function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
-  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  if (diffSecs < 60) return 'just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
+}
+
+export function NotificationsPage() {
+  const { publicKey } = useWallet();
+  const { 
+    notifications, 
+    unreadCount, 
+    loading, 
+    markAsRead, 
+    markAllAsRead,
+    deleteNotification 
+  } = useNotifications();
+  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const filteredNotifications = filter === 'unread' 
     ? notifications.filter(n => !n.read)
     : notifications;
 
-  const markAsRead = (id: string) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === id ? { ...n, read: true } : n)
-    );
+  const handleMarkAsRead = async (id: string) => {
+    await markAsRead(id);
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => 
-      prev.map(n => ({ ...n, read: true }))
-    );
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeletingId(id);
+    await deleteNotification(id);
+    setDeletingId(null);
   };
+
+  if (!publicKey) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12 text-center">
+        <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-8">
+          <Wallet className="w-12 h-12 text-white/40 mx-auto mb-4" />
+          <p className="text-white/60 mb-6">Connect your wallet to view notifications</p>
+          <p className="text-white/40 text-sm">Use the Connect Wallet button in the header</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12 text-center">
+        <Loader2 className="w-8 h-8 text-white/40 animate-spin mx-auto mb-4" />
+        <p className="text-white/60">Loading notifications...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
@@ -197,8 +171,8 @@ export function NotificationsPage() {
           filteredNotifications.map((notification) => (
             <div
               key={notification.id}
-              onClick={() => markAsRead(notification.id)}
-              className={`relative p-4 rounded-xl border transition-all cursor-pointer ${
+              onClick={() => !notification.read && handleMarkAsRead(notification.id)}
+              className={`relative p-4 rounded-xl border transition-all cursor-pointer group ${
                 notification.read 
                   ? 'bg-white/5 border-white/10' 
                   : `${notificationColors[notification.type]} border-opacity-50`
@@ -209,6 +183,19 @@ export function NotificationsPage() {
                 <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-purple-500" />
               )}
 
+              {/* Delete button */}
+              <button
+                onClick={(e) => handleDelete(notification.id, e)}
+                disabled={deletingId === notification.id}
+                className="absolute top-4 right-8 p-1.5 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+              >
+                {deletingId === notification.id ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+              </button>
+
               <div className="flex gap-4">
                 {/* Icon */}
                 <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
@@ -216,25 +203,29 @@ export function NotificationsPage() {
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 pr-8">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <h3 className="font-semibold text-white">{notification.title}</h3>
                       <p className="text-gray-400 text-sm">{notification.message}</p>
                     </div>
                     <span className="text-xs text-gray-500 whitespace-nowrap">
-                      {notification.time}
+                      {formatTimeAgo(notification.created_at)}
                     </span>
                   </div>
 
-                  {/* Actor info */}
-                  {notification.actor && (
-                    <div className="flex items-center gap-2 mt-2">
+                  {/* Sender info */}
+                  {notification.sender && (
+                    <Link 
+                      href={`/profile/${notification.sender.username}`}
+                      className="flex items-center gap-2 mt-2 hover:opacity-80 transition-opacity"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-xs text-white font-bold">
-                        {notification.actor.avatar}
+                        {notification.sender.username.slice(0, 2).toUpperCase()}
                       </div>
-                      <span className="text-sm text-gray-400">{notification.actor.name}</span>
-                    </div>
+                      <span className="text-sm text-gray-400">{notification.sender.username}</span>
+                    </Link>
                   )}
 
                   {/* Additional data */}

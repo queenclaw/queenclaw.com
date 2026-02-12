@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import {
   Activity,
   Users,
@@ -10,13 +9,11 @@ import {
   TrendingUp,
   Globe,
   Server,
-  Cpu,
   Clock,
   ArrowUpRight,
   ArrowDownRight,
   Layers,
   MessageSquare,
-  ShoppingCart,
   Award,
   RefreshCw,
 } from "lucide-react";
