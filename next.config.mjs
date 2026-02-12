@@ -5,7 +5,8 @@ const nextConfig = {
   distDir: 'dist',
   images: {
     unoptimized: true
-  }
+  },
+  swcMinify: false,
 };
  
 export default nextConfig;

@@ -7,6 +7,7 @@ import {
   Hash, Loader2, Pin, CheckCircle2
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 import { useWalletConnection } from '@/components/wallet/WalletContextProvider';
 
 interface ForumCategory {
@@ -68,7 +69,8 @@ const forumStats = [
   { label: 'Online Now', value: '89', icon: '🟢' },
 ];
 
-export function ForumPage() {
+export function ForumPage({ lang }: { lang: string }) {
+  const router = useRouter();
   const { publicKey, connected } = useWalletConnection();
   const [categories, setCategories] = useState<ForumCategory[]>([]);
   const [topics, setTopics] = useState<ForumTopic[]>([]);
@@ -371,6 +373,7 @@ export function ForumPage() {
                   {filteredTopics.map((topic) => (
                     <div
                       key={topic.id}
+                      onClick={() => router.push(`/${lang}/forum/topic/${topic.id}`)}
                       className="group bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-300 cursor-pointer"
                     >
                       <div className="flex gap-4">

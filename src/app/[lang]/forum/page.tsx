@@ -13,6 +13,12 @@ export function generateStaticParams() {
   ];
 }
 
-export default function Page() {
-  return <ForumPage />;
+interface PageProps {
+  params: {
+    lang: string;
+  };
+}
+
+export default function Page({ params }: PageProps) {
+  return <ForumPage lang={params.lang} />;
 }
