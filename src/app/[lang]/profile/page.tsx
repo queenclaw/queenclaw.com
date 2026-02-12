@@ -6,6 +6,6 @@ export function generateStaticParams() {
 
 import { ProfilePage } from './ProfilePage';
 
-export default function Page() {
+export default function Page({ params }: { params: { lang: string } }) {
   return <ProfilePage />;
 }

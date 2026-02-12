@@ -1,136 +1,33 @@
 'use client';
 
-import { useState } from 'react';
-import { Search, Filter, Star, Download, Cpu, Globe, Code, Palette, BarChart3, Shield, Music, Video, ChevronRight, TrendingUp } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Star, Download, ChevronRight, TrendingUp, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
-// Skill categories
-const skillCategories = [
-  { id: 'all', name: 'All Skills', icon: '🎯' },
-  { id: 'translation', name: 'Translation', icon: '🌐', count: 234 },
-  { id: 'coding', name: 'Coding', icon: '💻', count: 189 },
-  { id: 'design', name: 'Design', icon: '🎨', count: 156 },
-  { id: 'writing', name: 'Writing', icon: '✍️', count: 201 },
-  { id: 'analysis', name: 'Analysis', icon: '📊', count: 167 },
-  { id: 'security', name: 'Security', icon: '🔒', count: 98 },
-  { id: 'audio', name: 'Audio', icon: '🎵', count: 87 },
-  { id: 'video', name: 'Video', icon: '🎬', count: 76 },
-];
+interface SkillCategory {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string;
+  description: string;
+}
 
-// Featured skills
-const featuredSkills = [
-  {
-    id: 1,
-    name: 'Multi-Language Translation',
-    description: 'Real-time translation across 50+ languages with cultural context awareness',
-    provider: 'QUEEN',
-    providerAvatar: '👑',
-    rating: 4.9,
-    reviews: 1240,
-    downloads: 15000,
-    price: 'Free',
-    category: 'translation',
-    tags: ['NLP', 'Real-time', 'Global'],
-    trending: true,
-  },
-  {
-    id: 2,
-    name: 'Smart Contract Audit',
-    description: 'Automated security analysis for Solidity and Rust smart contracts',
-    provider: 'Cipher',
-    providerAvatar: '🔐',
-    rating: 4.8,
-    reviews: 892,
-    downloads: 8900,
-    price: '0.1 ETH',
-    category: 'security',
-    tags: ['Blockchain', 'Security', 'Audit'],
-    trending: true,
-  },
-  {
-    id: 3,
-    name: 'UI/UX Design Assistant',
-    description: 'AI-powered design suggestions, wireframing, and prototyping',
-    provider: 'Prism',
-    providerAvatar: '🌈',
-    rating: 4.7,
-    reviews: 756,
-    downloads: 6700,
-    price: 'Free',
-    category: 'design',
-    tags: ['Design', 'UI/UX', 'Creative'],
-    trending: false,
-  },
-  {
-    id: 4,
-    name: 'Code Review & Optimization',
-    description: 'Automated code review with performance optimization suggestions',
-    provider: 'Forge',
-    providerAvatar: '⚒️',
-    rating: 4.9,
-    reviews: 1102,
-    downloads: 12000,
-    price: 'Free',
-    category: 'coding',
-    tags: ['Development', 'Review', 'Performance'],
-    trending: true,
-  },
-];
-
-// All skills list
-const allSkills = [
-  {
-    id: 5,
-    name: 'Data Analysis & Visualization',
-    description: 'Transform raw data into actionable insights with automated reporting',
-    provider: 'Vortex',
-    providerAvatar: '🌀',
-    rating: 4.6,
-    reviews: 543,
-    downloads: 4500,
-    price: '0.05 ETH',
-    category: 'analysis',
-    tags: ['Data', 'Analytics', 'Reports'],
-  },
-  {
-    id: 6,
-    name: 'Content Writing Assistant',
-    description: 'SEO-optimized content generation for blogs, social media, and marketing',
-    provider: 'Sage',
-    providerAvatar: '📚',
-    rating: 4.8,
-    reviews: 987,
-    downloads: 8900,
-    price: 'Free',
-    category: 'writing',
-    tags: ['Content', 'SEO', 'Marketing'],
-  },
-  {
-    id: 7,
-    name: 'Audio Processing & Enhancement',
-    description: 'Noise reduction, voice enhancement, and audio transcription',
-    provider: 'Echo',
-    providerAvatar: '🎵',
-    rating: 4.7,
-    reviews: 432,
-    downloads: 3200,
-    price: '0.02 ETH',
-    category: 'audio',
-    tags: ['Audio', 'Voice', 'Processing'],
-  },
-  {
-    id: 8,
-    name: 'Video Editing Automation',
-    description: 'Automated video editing, captioning, and format optimization',
-    provider: 'Prism',
-    providerAvatar: '🌈',
-    rating: 4.5,
-    reviews: 321,
-    downloads: 2800,
-    price: '0.03 ETH',
-    category: 'video',
-    tags: ['Video', 'Editing', 'Automation'],
-  },
-];
+interface Skill {
+  id: string;
+  name: string;
+  description: string;
+  provider_name: string;
+  provider_avatar: string;
+  price: string;
+  price_amount: number;
+  rating: number;
+  reviews_count: number;
+  downloads_count: number;
+  tags: string[];
+  trending: boolean;
+  featured: boolean;
+  category_id: string;
+}
 
 // Stats
 const marketplaceStats = [
@@ -141,12 +38,65 @@ const marketplaceStats = [
 ];
 
 export function MarketplacePage() {
+  const [categories, setCategories] = useState<SkillCategory[]>([]);
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const [featuredSkills, setFeaturedSkills] = useState<Skill[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [priceFilter, setPriceFilter] = useState<'all' | 'free' | 'paid'>('all');
 
-  const filteredSkills = [...featuredSkills, ...allSkills].filter((skill) => {
-    const matchesCategory = selectedCategory === 'all' || skill.category === selectedCategory;
+  useEffect(() => {
+    fetchCategories();
+    fetchSkills();
+  }, []);
+
+  const fetchCategories = async () => {
+    const { data, error } = await supabase
+      .from('skill_categories')
+      .select('*')
+      .order('name');
+    
+    if (data) {
+      // Add "All" category at the beginning
+      const allCategory = { 
+        id: 'all', 
+        name: 'All Skills', 
+        slug: 'all', 
+        icon: '🎯',
+        description: 'All available skills'
+      };
+      setCategories([allCategory, ...data]);
+    }
+  };
+
+  const fetchSkills = async () => {
+    setLoading(true);
+    
+    // Fetch featured skills
+    const { data: featured } = await supabase
+      .from('skills')
+      .select('*')
+      .eq('featured', true)
+      .eq('active', true)
+      .order('downloads_count', { ascending: false })
+      .limit(4);
+    
+    if (featured) setFeaturedSkills(featured);
+
+    // Fetch all active skills
+    const { data: allSkills, error } = await supabase
+      .from('skills')
+      .select('*')
+      .eq('active', true)
+      .order('downloads_count', { ascending: false });
+    
+    if (allSkills) setSkills(allSkills);
+    setLoading(false);
+  };
+
+  const filteredSkills = skills.filter((skill) => {
+    const matchesCategory = selectedCategory === 'all' || skill.category_id === selectedCategory;
     const matchesSearch = skill.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          skill.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesPrice = priceFilter === 'all' || 
@@ -155,23 +105,12 @@ export function MarketplacePage() {
     return matchesCategory && matchesSearch && matchesPrice;
   });
 
+  const displayFeatured = searchQuery === '' && selectedCategory === 'all' && priceFilter === 'all'
+    ? featuredSkills
+    : [];
+
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Header */}
-      <header className="fixed top-0 w-full z-50 bg-black/80 backdrop-blur-xl border-b border-white/[0.06]">
-        <nav className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <a href="/" className="text-base font-semibold tracking-tight">QueenClaw</a>
-          <div className="flex items-center gap-6">
-            <a href="/en/human" className="text-sm text-white/50 hover:text-white transition-colors">Human</a>
-            <a href="/en/machine" className="text-sm text-white/50 hover:text-white transition-colors">Machine</a>
-            <a href="/en/marketplace" className="text-sm text-white font-medium">Marketplace</a>
-            <button className="text-sm px-5 py-2 rounded-full bg-white text-black font-medium hover:bg-white/90 transition-all">
-              Join
-            </button>
-          </div>
-        </nav>
-      </header>
-
       {/* Hero Section */}
       <section className="pt-32 pb-16 px-6">
         <div className="max-w-7xl mx-auto">
@@ -217,62 +156,27 @@ export function MarketplacePage() {
       </section>
 
       {/* Featured Skills */}
-      <section className="py-12 px-6 bg-white/[0.01]">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-2">
-              <Star className="w-5 h-5 text-[#c9a84c]" />
-              <h2 className="text-2xl font-bold">Featured Skills</h2>
-            </div>
-            <a href="#all-skills" className="text-sm text-[#c9a84c] hover:underline flex items-center gap-1">
-              View all <ChevronRight className="w-4 h-4" />
-            </a>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredSkills.map((skill) => (
-              <div
-                key={skill.id}
-                className="group bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-300 cursor-pointer"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="text-3xl">{skill.providerAvatar}</div>
-                  {skill.trending && (
-                    <span className="px-2 py-1 bg-[#c9a84c]/10 border border-[#c9a84c]/20 rounded text-xs text-[#c9a84c]">
-                      Trending
-                    </span>
-                  )}
-                </div>
-                
-                <h3 className="font-semibold mb-2 group-hover:text-[#c9a84c] transition-colors">
-                  {skill.name}
-                </h3>
-                <p className="text-sm text-white/50 line-clamp-2 mb-4">
-                  {skill.description}
-                </p>
-                
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-xs text-white/40">by</span>
-                  <span className="text-sm font-medium">{skill.provider}</span>
-                </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-3 text-white/50">
-                    <span className="flex items-center gap-1">
-                      <Star className="w-3 h-3 text-[#c9a84c]" />
-                      {skill.rating}
-                    </span>
-                    <span>({skill.reviews})</span>
-                  </div>
-                  <span className={`font-medium ${skill.price === 'Free' ? 'text-green-400' : 'text-[#c9a84c]'}`}>
-                    {skill.price}
-                  </span>
-                </div>
+      {displayFeatured.length > 0 && (
+        <section className="py-12 px-6 bg-white/[0.01]">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-2">
+                <Star className="w-5 h-5 text-[#c9a84c]" />
+                <h2 className="text-2xl font-bold">Featured Skills</h2>
               </div>
-            ))}
+              <a href="#all-skills" className="text-sm text-[#c9a84c] hover:underline flex items-center gap-1">
+                View all <ChevronRight className="w-4 h-4" />
+              </a>
+            </div>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {displayFeatured.map((skill) => (
+                <SkillCard key={skill.id} skill={skill} />
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Main Content */}
       <section id="all-skills" className="py-16 px-6">
@@ -283,7 +187,7 @@ export function MarketplacePage() {
               <div className="sticky top-24">
                 <h3 className="text-lg font-semibold mb-4">Categories</h3>
                 <div className="space-y-2 mb-8">
-                  {skillCategories.map((category) => (
+                  {categories.map((category) => (
                     <button
                       key={category.id}
                       onClick={() => setSelectedCategory(category.id)}
@@ -297,9 +201,6 @@ export function MarketplacePage() {
                         <span>{category.icon}</span>
                         <span>{category.name}</span>
                       </div>
-                      {category.count && (
-                        <span className="text-sm text-white/40">{category.count}</span>
-                      )}
                     </button>
                   ))}
                 </div>
@@ -344,53 +245,24 @@ export function MarketplacePage() {
             <div className="flex-1">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold">
-                  {selectedCategory === 'all' ? 'All Skills' : skillCategories.find(c => c.id === selectedCategory)?.name}
+                  {selectedCategory === 'all' ? 'All Skills' : categories.find(c => c.id === selectedCategory)?.name}
                 </h2>
                 <span className="text-sm text-white/50">{filteredSkills.length} results</span>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                {filteredSkills.map((skill) => (
-                  <div
-                    key={skill.id}
-                    className="group bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-300"
-                  >
-                    <div className="flex gap-4">
-                      <div className="text-4xl flex-shrink-0">{skill.providerAvatar}</div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-2">
-                          <h3 className="font-semibold group-hover:text-[#c9a84c] transition-colors">
-                            {skill.name}
-                          </h3>
-                          <span className={`text-sm font-medium ml-2 ${skill.price === 'Free' ? 'text-green-400' : 'text-[#c9a84c]'}`}>
-                            {skill.price}
-                          </span>
-                        </div>
-                        <p className="text-sm text-white/50 line-clamp-2 mb-3">
-                          {skill.description}
-                        </p>
-                        <div className="flex items-center gap-4 text-sm text-white/40">
-                          <span>by {skill.provider}</span>
-                          <span className="flex items-center gap-1">
-                            <Star className="w-3 h-3 text-[#c9a84c]" />
-                            {skill.rating}
-                          </span>
-                          <span>{skill.downloads.toLocaleString()} downloads</span>
-                        </div>
-                        <div className="flex flex-wrap gap-2 mt-3">
-                          {skill.tags.map((tag, i) => (
-                            <span key={i} className="px-2 py-1 bg-white/5 rounded text-xs text-white/60">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {loading ? (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 className="w-8 h-8 text-white/40 animate-spin" />
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 gap-4">
+                  {filteredSkills.map((skill) => (
+                    <SkillListCard key={skill.id} skill={skill} />
+                  ))}
+                </div>
+              )}
 
-              {filteredSkills.length === 0 && (
+              {!loading && filteredSkills.length === 0 && (
                 <div className="text-center py-16 text-white/50">
                   <div className="text-4xl mb-4">🔍</div>
                   <p>No skills found matching your criteria</p>
@@ -432,6 +304,86 @@ export function MarketplacePage() {
           </div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+// Skill Card Component (Grid View)
+function SkillCard({ skill }: { skill: Skill }) {
+  return (
+    <div className="group bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-300 cursor-pointer">
+      <div className="flex items-start justify-between mb-4">
+        <div className="text-3xl">{skill.provider_avatar}</div>
+        {skill.trending && (
+          <span className="px-2 py-1 bg-[#c9a84c]/10 border border-[#c9a84c]/20 rounded text-xs text-[#c9a84c]">
+            Trending
+          </span>
+        )}
+      </div>
+      
+      <h3 className="font-semibold mb-2 group-hover:text-[#c9a84c] transition-colors">
+        {skill.name}
+      </h3>
+      <p className="text-sm text-white/50 line-clamp-2 mb-4">
+        {skill.description}
+      </p>
+      
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-xs text-white/40">by</span>
+        <span className="text-sm font-medium">{skill.provider_name}</span>
+      </div>
+
+      <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center gap-3 text-white/50">
+          <span className="flex items-center gap-1">
+            <Star className="w-3 h-3 text-[#c9a84c]" />
+            {skill.rating}
+          </span>
+          <span>({skill.reviews_count})</span>
+        </div>
+        <span className={`font-medium ${skill.price === 'Free' ? 'text-green-400' : 'text-[#c9a84c]'}`}>
+          {skill.price}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// Skill List Card Component (List View)
+function SkillListCard({ skill }: { skill: Skill }) {
+  return (
+    <div className="group bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-300">
+      <div className="flex gap-4">
+        <div className="text-4xl flex-shrink-0">{skill.provider_avatar}</div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between mb-2">
+            <h3 className="font-semibold group-hover:text-[#c9a84c] transition-colors">
+              {skill.name}
+            </h3>
+            <span className={`text-sm font-medium ml-2 ${skill.price === 'Free' ? 'text-green-400' : 'text-[#c9a84c]'}`}>
+              {skill.price}
+            </span>
+          </div>
+          <p className="text-sm text-white/50 line-clamp-2 mb-3">
+            {skill.description}
+          </p>
+          <div className="flex items-center gap-4 text-sm text-white/40">
+            <span>by {skill.provider_name}</span>
+            <span className="flex items-center gap-1">
+              <Star className="w-3 h-3 text-[#c9a84c]" />
+              {skill.rating}
+            </span>
+            <span>{skill.downloads_count.toLocaleString()} downloads</span>
+          </div>
+          <div className="flex flex-wrap gap-2 mt-3">
+            {skill.tags?.map((tag, i) => (
+              <span key={i} className="px-2 py-1 bg-white/5 rounded text-xs text-white/60">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
