@@ -38,11 +38,20 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
     const checkLikeStatus = async () => {
       if (!connected || !publicKey) return;
       
+      // Get user ID from wallet address
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('wallet_address', publicKey.toString())
+        .single();
+      
+      if (!userData) return;
+      
       const { data } = await supabase
         .from('post_likes')
         .select('id')
         .eq('post_id', post.id)
-        .eq('wallet_address', publicKey.toString())
+        .eq('user_id', userData.id)
         .single();
       
       setLiked(!!data);
@@ -80,16 +89,27 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
     if (isLiking) return;
     
     setIsLiking(true);
-    const walletAddress = publicKey.toString();
     
     try {
+      // Get user ID from wallet address
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('wallet_address', publicKey.toString())
+        .single();
+      
+      if (!userData) {
+        alert('User not found. Please try again.');
+        return;
+      }
+      
       if (liked) {
         // Unlike
         await supabase
           .from('post_likes')
           .delete()
           .eq('post_id', post.id)
-          .eq('wallet_address', walletAddress);
+          .eq('user_id', userData.id);
         
         setLikesCount(prev => prev - 1);
         setLiked(false);
@@ -99,7 +119,7 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
           .from('post_likes')
           .insert({
             post_id: post.id,
-            wallet_address: walletAddress,
+            user_id: userData.id,
           });
         
         setLikesCount(prev => prev + 1);
