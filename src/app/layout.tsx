@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { WalletContextProvider } from '@/components/wallet/WalletContextProvider'
+import { ServiceWorkerRegistration } from '@/hooks/usePWA'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -98,6 +99,7 @@ export default function RootLayout({
         <WalletContextProvider>
           {children}
         </WalletContextProvider>
+        <ServiceWorkerRegistration />
       </body>
     </html>
   )
