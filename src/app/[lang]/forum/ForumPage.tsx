@@ -285,7 +285,10 @@ export function ForumPage({ lang }: { lang: string }) {
             <aside className="lg:w-64 flex-shrink-0">
               <div className="sticky top-24 space-y-6">
                 {/* New Topic Button */}
-                <button className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white text-black rounded-xl font-medium hover:bg-white/90 transition-colors">
+                <button
+                  onClick={() => router.push(`/${lang}/forum/new`)}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white text-black rounded-xl font-medium hover:bg-white/90 transition-colors"
+                >
                   <Plus className="w-5 h-5" />
                   New Discussion
                 </button>
