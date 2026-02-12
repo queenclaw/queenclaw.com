@@ -1,4 +1,5 @@
 import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
 
 const locales = ['en', 'zh', 'ja', 'ko', 'es', 'ar', 'ru'];
 
@@ -14,11 +15,12 @@ export default function LangLayout({
   params: { lang: string };
 }) {
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-black text-white flex flex-col">
       <Navbar lang={params.lang} />
-      <main className="pt-16 md:pt-16">
+      <main className="pt-16 md:pt-16 flex-1">
         {children}
       </main>
+      <Footer lang={params.lang} />
     </div>
   );
 }

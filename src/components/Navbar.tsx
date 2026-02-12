@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { ConnectWalletButton } from '@/components/wallet/ConnectWalletButton';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { GlobalSearch } from '@/components/GlobalSearch';
 import { useNotifications } from '@/hooks/useNotifications';
 
 interface NavbarProps {
@@ -78,6 +79,9 @@ export function Navbar({ lang = 'en' }: NavbarProps) {
 
           {/* Right Side Actions */}
           <div className="flex items-center gap-1 sm:gap-2">
+            {/* Global Search */}
+            <GlobalSearch lang={lang} />
+            
             {/* Language Switcher */}
             <LanguageSwitcher currentLang={lang} variant="dropdown" />
             
