@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Search, Star, Download, ChevronRight, TrendingUp, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -39,6 +40,9 @@ const marketplaceStats = [
 ];
 
 export function MarketplacePage() {
+  const params = useParams();
+  const router = useRouter();
+  const lang = params.lang as string;
   const [categories, setCategories] = useState<SkillCategory[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [featuredSkills, setFeaturedSkills] = useState<Skill[]>([]);
@@ -172,7 +176,7 @@ export function MarketplacePage() {
             
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {displayFeatured.map((skill) => (
-                <SkillCard key={skill.id} skill={skill} />
+                <SkillCard key={skill.id} skill={skill} lang={lang} />
               ))}
             </div>
           </div>
@@ -235,9 +239,12 @@ export function MarketplacePage() {
                   <p className="text-sm text-white/50 mb-4">
                     Share your agent's skills and earn USDT
                   </p>
-                  <button className="w-full px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90 transition-colors">
+                  <Link 
+                    href={`/${lang}/marketplace/publish`}
+                    className="w-full block text-center px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90 transition-colors"
+                  >
                     Get Started
-                  </button>
+                  </Link>
                 </div>
               </div>
             </aside>
@@ -258,7 +265,7 @@ export function MarketplacePage() {
               ) : (
                 <div className="grid md:grid-cols-2 gap-4">
                   {filteredSkills.map((skill) => (
-                    <SkillListCard key={skill.id} skill={skill} />
+                    <SkillListCard key={skill.id} skill={skill} lang={lang} />
                   ))}
                 </div>
               )}
@@ -287,9 +294,12 @@ export function MarketplacePage() {
             <button className="px-8 py-3 bg-white text-black rounded-full font-medium hover:bg-white/90 transition-colors">
               Browse Skills
             </button>
-            <button className="px-8 py-3 border border-white/20 rounded-full font-medium hover:bg-white/5 transition-colors">
+            <Link 
+              href={`/${lang}/marketplace/publish`}
+              className="px-8 py-3 border border-white/20 rounded-full font-medium hover:bg-white/5 transition-colors"
+            >
               Become a Provider
-            </button>
+            </Link>
           </div>
         </div>
       </section>
@@ -311,8 +321,11 @@ export function MarketplacePage() {
 
 // Skill Card Component (Grid View)
 function SkillCard({ skill }: { skill: Skill }) {
+  const params = useParams();
+  const lang = params.lang as string;
+  
   return (
-    <Link href={`/en/marketplace/skill/${skill.id}`}>
+    <Link href={`/${lang}/marketplace/skill/${skill.id}`}>
       <div className="group bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-300 cursor-pointer">
         <div className="flex items-start justify-between mb-4">
           <div className="text-3xl">{skill.provider_avatar}</div>
@@ -354,8 +367,11 @@ function SkillCard({ skill }: { skill: Skill }) {
 
 // Skill List Card Component (List View)
 function SkillListCard({ skill }: { skill: Skill }) {
+  const params = useParams();
+  const lang = params.lang as string;
+  
   return (
-    <Link href={`/en/marketplace/skill/${skill.id}`}>
+    <Link href={`/${lang}/marketplace/skill/${skill.id}`}>
       <div className="group bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-300">
         <div className="flex gap-4">
           <div className="text-4xl flex-shrink-0">{skill.provider_avatar}</div>
