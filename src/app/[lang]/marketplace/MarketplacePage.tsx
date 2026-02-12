@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Search, Star, Download, ChevronRight, TrendingUp, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -311,79 +312,83 @@ export function MarketplacePage() {
 // Skill Card Component (Grid View)
 function SkillCard({ skill }: { skill: Skill }) {
   return (
-    <div className="group bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-300 cursor-pointer">
-      <div className="flex items-start justify-between mb-4">
-        <div className="text-3xl">{skill.provider_avatar}</div>
-        {skill.trending && (
-          <span className="px-2 py-1 bg-[#c9a84c]/10 border border-[#c9a84c]/20 rounded text-xs text-[#c9a84c]">
-            Trending
-          </span>
-        )}
-      </div>
-      
-      <h3 className="font-semibold mb-2 group-hover:text-[#c9a84c] transition-colors">
-        {skill.name}
-      </h3>
-      <p className="text-sm text-white/50 line-clamp-2 mb-4">
-        {skill.description}
-      </p>
-      
-      <div className="flex items-center gap-2 mb-4">
-        <span className="text-xs text-white/40">by</span>
-        <span className="text-sm font-medium">{skill.provider_name}</span>
-      </div>
-
-      <div className="flex items-center justify-between text-sm">
-        <div className="flex items-center gap-3 text-white/50">
-          <span className="flex items-center gap-1">
-            <Star className="w-3 h-3 text-[#c9a84c]" />
-            {skill.rating}
-          </span>
-          <span>({skill.reviews_count})</span>
+    <Link href={`/en/marketplace/skill/${skill.id}`}>
+      <div className="group bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-300 cursor-pointer">
+        <div className="flex items-start justify-between mb-4">
+          <div className="text-3xl">{skill.provider_avatar}</div>
+          {skill.trending && (
+            <span className="px-2 py-1 bg-[#c9a84c]/10 border border-[#c9a84c]/20 rounded text-xs text-[#c9a84c]">
+              Trending
+            </span>
+          )}
         </div>
-        <span className={`font-medium ${skill.price === 'Free' ? 'text-green-400' : 'text-[#c9a84c]'}`}>
-          {skill.price}
-        </span>
+        
+        <h3 className="font-semibold mb-2 group-hover:text-[#c9a84c] transition-colors">
+          {skill.name}
+        </h3>
+        <p className="text-sm text-white/50 line-clamp-2 mb-4">
+          {skill.description}
+        </p>
+        
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-xs text-white/40">by</span>
+          <span className="text-sm font-medium">{skill.provider_name}</span>
+        </div>
+
+        <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center gap-3 text-white/50">
+            <span className="flex items-center gap-1">
+              <Star className="w-3 h-3 text-[#c9a84c]" />
+              {skill.rating}
+            </span>
+            <span>({skill.reviews_count})</span>
+          </div>
+          <span className={`font-medium ${skill.price === 'Free' ? 'text-green-400' : 'text-[#c9a84c]'}`}>
+            {skill.price}
+          </span>
+        </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
 // Skill List Card Component (List View)
 function SkillListCard({ skill }: { skill: Skill }) {
   return (
-    <div className="group bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-300">
-      <div className="flex gap-4">
-        <div className="text-4xl flex-shrink-0">{skill.provider_avatar}</div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between mb-2">
-            <h3 className="font-semibold group-hover:text-[#c9a84c] transition-colors">
-              {skill.name}
-            </h3>
-            <span className={`text-sm font-medium ml-2 ${skill.price === 'Free' ? 'text-green-400' : 'text-[#c9a84c]'}`}>
-              {skill.price}
-            </span>
-          </div>
-          <p className="text-sm text-white/50 line-clamp-2 mb-3">
-            {skill.description}
-          </p>
-          <div className="flex items-center gap-4 text-sm text-white/40">
-            <span>by {skill.provider_name}</span>
-            <span className="flex items-center gap-1">
-              <Star className="w-3 h-3 text-[#c9a84c]" />
-              {skill.rating}
-            </span>
-            <span>{skill.downloads_count.toLocaleString()} downloads</span>
-          </div>
-          <div className="flex flex-wrap gap-2 mt-3">
-            {skill.tags?.map((tag, i) => (
-              <span key={i} className="px-2 py-1 bg-white/5 rounded text-xs text-white/60">
-                {tag}
+    <Link href={`/en/marketplace/skill/${skill.id}`}>
+      <div className="group bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-300">
+        <div className="flex gap-4">
+          <div className="text-4xl flex-shrink-0">{skill.provider_avatar}</div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between mb-2">
+              <h3 className="font-semibold group-hover:text-[#c9a84c] transition-colors">
+                {skill.name}
+              </h3>
+              <span className={`text-sm font-medium ml-2 ${skill.price === 'Free' ? 'text-green-400' : 'text-[#c9a84c]'}`}>
+                {skill.price}
               </span>
-            ))}
+            </div>
+            <p className="text-sm text-white/50 line-clamp-2 mb-3">
+              {skill.description}
+            </p>
+            <div className="flex items-center gap-4 text-sm text-white/40">
+              <span>by {skill.provider_name}</span>
+              <span className="flex items-center gap-1">
+                <Star className="w-3 h-3 text-[#c9a84c]" />
+                {skill.rating}
+              </span>
+              <span>{skill.downloads_count.toLocaleString()} downloads</span>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-3">
+              {skill.tags?.map((tag, i) => (
+                <span key={i} className="px-2 py-1 bg-white/5 rounded text-xs text-white/60">
+                  {tag}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
