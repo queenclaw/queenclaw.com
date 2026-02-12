@@ -1,20 +1,12 @@
-<<<<<<< HEAD
 import { createClient } from '@supabase/supabase-js';
-import { Database } from '@/types/supabase';
+import { Database } from './database.types';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseKey);
-=======
-import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-export const supabase = createClient(supabaseUrl, supabaseKey)
-
-// 类型定义
+// 类型定义（向后兼容）
 export type User = {
   id: string
   wallet_address: string
@@ -50,4 +42,3 @@ export type Bot = {
   badges: string[]
   created_at: string
 }
->>>>>>> 2eda2b9 (feat: integrate Supabase for Human and Machine Space)
