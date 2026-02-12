@@ -6,6 +6,6 @@ export function generateStaticParams() {
 
 import { ExplorePage } from './ExplorePage';
 
-export default function Page() {
-  return <ExplorePage />;
+export default function Page({ params }: { params: { lang: string } }) {
+  return <ExplorePage lang={params.lang} />;
 }
