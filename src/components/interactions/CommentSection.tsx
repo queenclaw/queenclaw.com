@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Send } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useWalletConnection } from '@/components/wallet/WalletContextProvider';
 
 interface Comment {
   id: string;
@@ -19,17 +20,37 @@ interface CommentSectionProps {
 }
 
 export function CommentSection({ postId }: CommentSectionProps) {
+  const { publicKey, connected } = useWalletConnection();
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [fetching, setFetching] = useState(true);
-  const [walletConnected, setWalletConnected] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchComments();
+    
+    // Subscribe to new comments
+    const subscription = supabase
+      .channel(`comments:${postId}`)
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'comments',
+        filter: `post_id=eq.${postId}`
+      }, (payload) => {
+        // Fetch the complete comment with author info
+        fetchComments();
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [postId]);
 
   const fetchComments = async () => {
+    setFetching(true);
     const { data, error } = await supabase
       .from('comments')
       .select(`
@@ -39,48 +60,101 @@ export function CommentSection({ postId }: CommentSectionProps) {
       .eq('post_id', postId)
       .order('created_at', { ascending: true });
 
-    if (data) setComments(data);
+    if (error) {
+      console.error('Error fetching comments:', error);
+    } else if (data) {
+      setComments(data);
+    }
     setFetching(false);
   };
 
   const handleSubmit = async () => {
-    if (!comment.trim() || !walletConnected) return;
+    if (!comment.trim() || !connected || !publicKey) {
+      setError('Please connect your wallet first');
+      return;
+    }
     
     setLoading(true);
+    setError(null);
     
-    // Mock submission
-    const newComment: Comment = {
-      id: Date.now().toString(),
-      content: comment.trim(),
-      created_at: new Date().toISOString(),
-      author: {
-        username: 'user_' + Math.random().toString(36).substr(2, 8),
-        avatar_url: null,
-      },
-    };
-    
-    setComments([...comments, newComment]);
-    setComment('');
-    setLoading(false);
+    try {
+      const walletAddress = publicKey.toString();
+      
+      // Get or create user
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('wallet_address', walletAddress)
+        .single();
+
+      let userId;
+      if (userError || !userData) {
+        // Create new user
+        const { data: newUser, error: createError } = await supabase
+          .from('users')
+          .insert({
+            wallet_address: walletAddress,
+            username: `user_${walletAddress.slice(0, 8)}`,
+          })
+          .select('id')
+          .single();
+        
+        if (createError) throw createError;
+        userId = newUser?.id;
+      } else {
+        userId = userData.id;
+      }
+
+      // Create comment
+      const { error: commentError } = await supabase
+        .from('comments')
+        .insert({
+          content: comment.trim(),
+          post_id: postId,
+          user_id: userId,
+          created_at: new Date().toISOString(),
+        });
+
+      if (commentError) throw commentError;
+
+      setComment('');
+      // Refresh comments
+      fetchComments();
+      
+    } catch (err: any) {
+      console.error('Failed to create comment:', err);
+      setError(err.message || 'Failed to post comment');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="mt-4 pt-4 border-t border-white/10">
-      {walletConnected ? (
+      {error && (
+        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <p className="text-sm text-red-400">{error}</p>
+        </div>
+      )}
+      
+      {connected ? (
         <div className="flex gap-3 mb-4">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#c9a84c] to-[#e8c55a] flex-shrink-0" />
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+            {publicKey?.toString().slice(0, 2).toUpperCase()}
+          </div>
           <div className="flex-1 flex gap-2">
             <input
               type="text"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Write a comment..."
-              className="flex-1 bg-white/5 rounded-full px-4 py-2 text-white placeholder-white/30 outline-none focus:ring-2 focus:ring-[#c9a84c]"
+              className="flex-1 bg-white/5 rounded-full px-4 py-2 text-white placeholder-white/30 outline-none focus:ring-2 focus:ring-purple-500"
+              maxLength={280}
             />
             <button
               onClick={handleSubmit}
               disabled={loading || !comment.trim()}
-              className="p-2 bg-[#c9a84c] rounded-full text-black disabled:opacity-50 hover:bg-[#e8c55a] transition-colors"
+              className="p-2 bg-white text-black rounded-full disabled:opacity-50 hover:bg-white/90 transition-colors"
             >
               <Send size={16} />
             </button>
@@ -89,12 +163,6 @@ export function CommentSection({ postId }: CommentSectionProps) {
       ) : (
         <div className="mb-4 p-4 bg-white/[0.02] rounded-xl text-center">
           <p className="text-white/50 mb-2">Connect wallet to comment</p>
-          <button 
-            onClick={() => setWalletConnected(true)}
-            className="px-4 py-2 bg-white text-black rounded-full text-sm font-medium"
-          >
-            Connect
-          </button>
         </div>
       )}
       
@@ -106,7 +174,9 @@ export function CommentSection({ postId }: CommentSectionProps) {
         ) : (
           comments.map((c) => (
             <div key={c.id} className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#c9a84c] to-[#e8c55a] flex-shrink-0" />
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                {c.author?.username?.[0]?.toUpperCase() || '?'}
+              </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{c.author?.username || 'Unknown'}</span>
