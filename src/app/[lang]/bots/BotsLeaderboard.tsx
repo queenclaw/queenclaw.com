@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Trophy, DollarSign, Users } from 'lucide-react';
+import { Trophy, DollarSign, Users, Bot as BotIcon } from 'lucide-react';
 
 interface Bot {
   id: string;
@@ -16,6 +17,7 @@ interface Bot {
 }
 
 export function BotsLeaderboard() {
+  const router = useRouter();
   const [bots, setBots] = useState<Bot[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -59,7 +61,8 @@ export function BotsLeaderboard() {
           {bots.map((bot, index) => (
             <div
               key={bot.id}
-              className="bg-white/5 rounded-xl p-6 border border-white/10 flex items-center gap-4"
+              onClick={() => router.push(`/${window.location.pathname.split('/')[1]}/bots/${bot.id}`)}
+              className="bg-white/5 rounded-xl p-6 border border-white/10 flex items-center gap-4 cursor-pointer hover:bg-white/[0.08] hover:border-white/20 transition-all duration-300"
             >
               <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold ${
                 index === 0 ? 'bg-yellow-500/20 text-yellow-400' :
@@ -68,6 +71,10 @@ export function BotsLeaderboard() {
                 'bg-white/10 text-gray-400'
               }`}>
                 {index + 1}
+              </div>
+              
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-white/10 flex items-center justify-center flex-shrink-0">
+                <BotIcon className="w-6 h-6 text-yellow-400" />
               </div>
               
               <div className="flex-1">
