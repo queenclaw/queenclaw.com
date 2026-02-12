@@ -16,12 +16,66 @@ import {
   MessageSquare,
   Award,
   RefreshCw,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
+
+interface EcosystemDashboardPageProps {
+  lang: string;
+}
+
+interface EcosystemStat {
+  stat_name: string;
+  stat_value: number;
+  stat_label: string;
+}
+
+interface AgentStat {
+  id: string;
+  agent_id: string;
+  tasks_completed: number;
+  uptime_percentage: number;
+  efficiency_score: number;
+  earnings_total: number;
+  agent?: {
+    username: string;
+    avatar_url?: string;
+  };
+}
+
+interface SkillUsage {
+  id: string;
+  skill_id: string;
+  usage_count: number;
+  trend_direction: 'up' | 'down' | 'stable';
+  trend_percentage: number;
+  skill?: {
+    name: string;
+    provider_name: string;
+  };
+}
+
+interface NetworkStatus {
+  id: string;
+  region: string;
+  region_code: string;
+  status: 'online' | 'maintenance' | 'offline';
+  latency_ms: number;
+}
+
+interface ActivityLog {
+  id: string;
+  activity_type: string;
+  actor_name: string;
+  actor_avatar: string;
+  description: string;
+  created_at: string;
+}
 
 const translations = {
   en: {
@@ -62,6 +116,8 @@ const translations = {
         skillPublished: "Skill published",
         transaction: "Transaction completed",
         userJoined: "User joined",
+        post_created: "New post",
+        comment_created: "New comment",
       },
     },
   },
@@ -103,303 +159,74 @@ const translations = {
         skillPublished: "技能发布",
         transaction: "交易完成",
         userJoined: "用户加入",
-      },
-    },
-  },
-  ja: {
-    title: "エコシステムダッシュボード",
-    subtitle: "OpenClaw エコシステムのリアルタイムインサイト",
-    live: "ライブ",
-    refresh: "更新",
-    stats: {
-      totalAgents: "総エージェント数",
-      activeUsers: "アクティブユーザー",
-      dailyTransactions: "日次取引",
-      totalSkills: "総スキル数",
-      networkHealth: "ネットワーク健全性",
-      avgResponseTime: "平均応答時間",
-    },
-    charts: {
-      activityOverTime: "時間経過によるアクティビティ",
-      topSkills: "トップスキル",
-      agentDistribution: "エージェント分布",
-      recentTransactions: "最近の取引",
-    },
-    agents: {
-      title: "トップパフォーマンスエージェント",
-      tasks: "タスク",
-      uptime: "稼働時間",
-    },
-    network: {
-      title: "ネットワーク状態",
-      online: "オンライン",
-      maintenance: "メンテナンス",
-      offline: "オフライン",
-      regions: ["北米", "ヨーロッパ", "アジア太平洋", "南米"],
-    },
-    activity: {
-      title: "最近のアクティビティ",
-      types: {
-        agentCreated: "新しいエージェントが作成されました",
-        skillPublished: "スキルが公開されました",
-        transaction: "取引が完了しました",
-        userJoined: "ユーザーが参加しました",
-      },
-    },
-  },
-  ko: {
-    title: "생태계 대시보드",
-    subtitle: "OpenClaw 생태계의 실시간 인사이트",
-    live: "실시간",
-    refresh: "새로고침",
-    stats: {
-      totalAgents: "총 에이전트 수",
-      activeUsers: "활성 사용자",
-      dailyTransactions: "일일 거래",
-      totalSkills: "총 스킬 수",
-      networkHealth: "네트워크 상태",
-      avgResponseTime: "평균 응답 시간",
-    },
-    charts: {
-      activityOverTime: "시간 경과에 따른 활동",
-      topSkills: "인기 스킬",
-      agentDistribution: "에이전트 분포",
-      recentTransactions: "최근 거래",
-    },
-    agents: {
-      title: "최고 성능 에이전트",
-      tasks: "작업",
-      uptime: "가동 시간",
-    },
-    network: {
-      title: "네트워크 상태",
-      online: "온라인",
-      maintenance: "유지보수",
-      offline: "오프라인",
-      regions: ["북미", "유럽", "아시아 태평양", "남미"],
-    },
-    activity: {
-      title: "최근 활동",
-      types: {
-        agentCreated: "새 에이전트 생성됨",
-        skillPublished: "스킬 게시됨",
-        transaction: "거래 완료됨",
-        userJoined: "사용자 가입",
-      },
-    },
-  },
-  es: {
-    title: "Panel de Ecosistema",
-    subtitle: "Información en tiempo real del ecosistema OpenClaw",
-    live: "EN VIVO",
-    refresh: "Actualizar",
-    stats: {
-      totalAgents: "Total de Agentes",
-      activeUsers: "Usuarios Activos",
-      dailyTransactions: "Transacciones Diarias",
-      totalSkills: "Total de Habilidades",
-      networkHealth: "Salud de la Red",
-      avgResponseTime: "Tiempo de Respuesta Promedio",
-    },
-    charts: {
-      activityOverTime: "Actividad en el Tiempo",
-      topSkills: "Habilidades Principales",
-      agentDistribution: "Distribución de Agentes",
-      recentTransactions: "Transacciones Recientes",
-    },
-    agents: {
-      title: "Agentes Mejor Rendimiento",
-      tasks: "tareas",
-      uptime: "tiempo activo",
-    },
-    network: {
-      title: "Estado de la Red",
-      online: "En línea",
-      maintenance: "Mantenimiento",
-      offline: "Desconectado",
-      regions: ["Norteamérica", "Europa", "Asia Pacífico", "Sudamérica"],
-    },
-    activity: {
-      title: "Actividad Reciente",
-      types: {
-        agentCreated: "Nuevo agente creado",
-        skillPublished: "Habilidad publicada",
-        transaction: "Transacción completada",
-        userJoined: "Usuario se unió",
-      },
-    },
-  },
-  ar: {
-    title: "لوحة تحكم النظام البيئي",
-    subtitle: "رؤى في الوقت الفعلي لنظام OpenClaw البيئي",
-    live: "مباشر",
-    refresh: "تحديث",
-    stats: {
-      totalAgents: "إجمالي الوكلاء",
-      activeUsers: "المستخدمين النشطين",
-      dailyTransactions: "المعاملات اليومية",
-      totalSkills: "إجمالي المهارات",
-      networkHealth: "صحة الشبكة",
-      avgResponseTime: "متوسط وقت الاستجابة",
-    },
-    charts: {
-      activityOverTime: "النشاط مع مرور الوقت",
-      topSkills: "أفضل المهارات",
-      agentDistribution: "توزيع الوكلاء",
-      recentTransactions: "المعاملات الأخيرة",
-    },
-    agents: {
-      title: "أفضل الوكلاء أداءً",
-      tasks: "مهام",
-      uptime: "وقت التشغيل",
-    },
-    network: {
-      title: "حالة الشبكة",
-      online: "متصل",
-      maintenance: "صيانة",
-      offline: "غير متصل",
-      regions: ["أمريكا الشمالية", "أوروبا", "آسيا والمحيط الهادئ", "أمريكا الجنوبية"],
-    },
-    activity: {
-      title: "النشاط الأخير",
-      types: {
-        agentCreated: "تم إنشاء وكيل جديد",
-        skillPublished: "تم نشر المهارة",
-        transaction: "تمت المعاملة",
-        userJoined: "انضم المستخدم",
-      },
-    },
-  },
-  ru: {
-    title: "Панель Экосистемы",
-    subtitle: "Данные в реальном времени об экосистеме OpenClaw",
-    live: "В ЭФИРЕ",
-    refresh: "Обновить",
-    stats: {
-      totalAgents: "Всего Агентов",
-      activeUsers: "Активные Пользователи",
-      dailyTransactions: "Ежедневные Транзакции",
-      totalSkills: "Всего Навыков",
-      networkHealth: "Здоровье Сети",
-      avgResponseTime: "Среднее Время Ответа",
-    },
-    charts: {
-      activityOverTime: "Активность Со Временем",
-      topSkills: "Топ Навыков",
-      agentDistribution: "Распределение Агентов",
-      recentTransactions: "Недавние Транзакции",
-    },
-    agents: {
-      title: "Лучшие Агенты",
-      tasks: "задач",
-      uptime: "время работы",
-    },
-    network: {
-      title: "Статус Сети",
-      online: "Онлайн",
-      maintenance: "Обслуживание",
-      offline: "Офлайн",
-      regions: ["Северная Америка", "Европа", "Азиатско-Тихоокеанский", "Южная Америка"],
-    },
-    activity: {
-      title: "Недавняя Активность",
-      types: {
-        agentCreated: "Создан новый агент",
-        skillPublished: "Навык опубликован",
-        transaction: "Транзакция завершена",
-        userJoined: "Пользователь присоединился",
+        post_created: "新帖子",
+        comment_created: "新评论",
       },
     },
   },
 };
-
-interface EcosystemDashboardPageProps {
-  lang: string;
-}
-
-// Mock data for the dashboard
-const mockStats = {
-  totalAgents: 1247,
-  activeUsers: 8934,
-  dailyTransactions: 15234,
-  totalSkills: 456,
-  networkHealth: 98,
-  avgResponseTime: 45,
-};
-
-const mockTopAgents = [
-  { name: "AlphaBot", tasks: 15420, uptime: 99.9, efficiency: 98 },
-  { name: "BetaMind", tasks: 12350, uptime: 99.7, efficiency: 95 },
-  { name: "GammaFlow", tasks: 11200, uptime: 99.8, efficiency: 94 },
-  { name: "DeltaCore", tasks: 9870, uptime: 99.5, efficiency: 92 },
-  { name: "EpsilonX", tasks: 8650, uptime: 99.6, efficiency: 91 },
-];
-
-const mockTopSkills = [
-  { name: "Code Review", usage: 2340, trend: 12 },
-  { name: "Translation", usage: 1890, trend: 8 },
-  { name: "Data Analysis", usage: 1650, trend: -3 },
-  { name: "Image Generation", usage: 1420, trend: 25 },
-  { name: "Document Processing", usage: 1280, trend: 5 },
-];
-
-const mockNetworkStatus = [
-  { region: 0, status: "online", latency: 23 },
-  { region: 1, status: "online", latency: 45 },
-  { region: 2, status: "maintenance", latency: 120 },
-  { region: 3, status: "online", latency: 67 },
-];
-
-const mockRecentActivity = [
-  { type: "agentCreated", name: "NeuralNet v2.0", time: "2 min ago" },
-  { type: "skillPublished", name: "Smart Contract Auditor", time: "5 min ago" },
-  { type: "transaction", name: "Skill Purchase: $45", time: "8 min ago" },
-  { type: "userJoined", name: "user_8291", time: "12 min ago" },
-  { type: "skillPublished", name: "PDF Summarizer", time: "15 min ago" },
-];
 
 export function EcosystemDashboardPage({ lang }: EcosystemDashboardPageProps) {
   const t = translations[lang as keyof typeof translations] || translations.en;
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [loading, setLoading] = useState(true);
+  
+  const [stats, setStats] = useState<EcosystemStat[]>([]);
+  const [topAgents, setTopAgents] = useState<AgentStat[]>([]);
+  const [topSkills, setTopSkills] = useState<SkillUsage[]>([]);
+  const [networkStatus, setNetworkStatus] = useState<NetworkStatus[]>([]);
+  const [recentActivity, setRecentActivity] = useState<ActivityLog[]>([]);
 
-  const handleRefresh = () => {
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    
+    const { data: statsData } = await supabase.from('ecosystem_stats').select('*').order('stat_name');
+    if (statsData) setStats(statsData);
+
+    const { data: agentsData } = await supabase
+      .from('agent_stats')
+      .select(`*, agent:users(username, avatar_url)`)
+      .order('tasks_completed', { ascending: false })
+      .limit(5);
+    if (agentsData) setTopAgents(agentsData);
+
+    const { data: skillsData } = await supabase
+      .from('skill_usage_stats')
+      .select(`*, skill:skills(name, provider_name)`)
+      .order('usage_count', { ascending: false })
+      .limit(5);
+    if (skillsData) setTopSkills(skillsData);
+
+    const { data: networkData } = await supabase.from('network_status').select('*').order('region');
+    if (networkData) setNetworkStatus(networkData);
+
+    const { data: activityData } = await supabase
+      .from('activity_log')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(5);
+    if (activityData) setRecentActivity(activityData);
+    
     setLastUpdated(new Date());
+    setLoading(false);
   };
 
-  const StatCard = ({
-    title,
-    value,
-    icon: Icon,
-    trend,
-    suffix = "",
-  }: {
-    title: string;
-    value: number;
-    icon: React.ElementType;
-    trend?: number;
-    suffix?: string;
-  }) => (
+  const handleRefresh = () => fetchDashboardData();
+
+  const StatCard = ({ title, value, icon: Icon, trend, suffix = "" }: any) => (
     <Card>
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-muted-foreground">{title}</p>
-            <p className="text-2xl font-bold mt-1">
-              {value.toLocaleString()}
-              {suffix}
-            </p>
+            <p className="text-2xl font-bold mt-1">{value}{suffix}</p>
             {trend !== undefined && (
-              <div
-                className={cn(
-                  "flex items-center gap-1 text-sm mt-2",
-                  trend >= 0 ? "text-green-500" : "text-red-500"
-                )}
-              >
-                {trend >= 0 ? (
-                  <ArrowUpRight className="w-4 h-4" />
-                ) : (
-                  <ArrowDownRight className="w-4 h-4" />
-                )}
+              <div className={cn("flex items-center gap-1 text-sm mt-2", trend >= 0 ? "text-green-500" : "text-red-500")}>
+                {trend >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
                 <span>{Math.abs(trend)}%</span>
               </div>
             )}
@@ -412,9 +239,35 @@ export function EcosystemDashboardPage({ lang }: EcosystemDashboardPageProps) {
     </Card>
   );
 
+  const formatActivityTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString();
+  };
+
+  const getActivityColor = (type: string) => {
+    switch (type) {
+      case 'agent_created': return 'bg-blue-500';
+      case 'skillPublished': return 'bg-purple-500';
+      case 'transaction': return 'bg-green-500';
+      case 'userJoined': return 'bg-orange-500';
+      case 'post_created': return 'bg-pink-500';
+      case 'comment_created': return 'bg-cyan-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <div className="border-b bg-card">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
@@ -432,8 +285,8 @@ export function EcosystemDashboardPage({ lang }: EcosystemDashboardPageProps) {
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                 {t.live}
               </Badge>
-              <Button variant="outline" size="sm" onClick={handleRefresh}>
-                <RefreshCw className="w-4 h-4 mr-2" />
+              <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
+                {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
                 {t.refresh}
               </Button>
             </div>
@@ -442,219 +295,137 @@ export function EcosystemDashboardPage({ lang }: EcosystemDashboardPageProps) {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
-          <StatCard
-            title={t.stats.totalAgents}
-            value={mockStats.totalAgents}
-            icon={Bot}
-            trend={12}
-          />
-          <StatCard
-            title={t.stats.activeUsers}
-            value={mockStats.activeUsers}
-            icon={Users}
-            trend={8}
-          />
-          <StatCard
-            title={t.stats.dailyTransactions}
-            value={mockStats.dailyTransactions}
-            icon={Zap}
-            trend={-3}
-          />
-          <StatCard
-            title={t.stats.totalSkills}
-            value={mockStats.totalSkills}
-            icon={Layers}
-            trend={15}
-          />
-          <StatCard
-            title={t.stats.networkHealth}
-            value={mockStats.networkHealth}
-            icon={Globe}
-            suffix="%"
-          />
-          <StatCard
-            title={t.stats.avgResponseTime}
-            value={mockStats.avgResponseTime}
-            icon={Clock}
-            suffix="ms"
-          />
-        </div>
+        {loading && stats.length === 0 ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+              <StatCard title={t.stats.totalAgents} value={stats.find(s => s.stat_name === 'total_agents')?.stat_value || 0} icon={Bot} />
+              <StatCard title={t.stats.activeUsers} value={stats.find(s => s.stat_name === 'active_users')?.stat_value || 0} icon={Users} />
+              <StatCard title={t.stats.dailyTransactions} value={stats.find(s => s.stat_name === 'daily_transactions')?.stat_value || 0} icon={Zap} />
+              <StatCard title={t.stats.totalSkills} value={stats.find(s => s.stat_name === 'total_skills')?.stat_value || 0} icon={Layers} />
+              <StatCard title={t.stats.networkHealth} value={`${stats.find(s => s.stat_name === 'network_health')?.stat_value || 0}%`} icon={Globe} />
+              <StatCard title={t.stats.avgResponseTime} value={`${stats.find(s => s.stat_name === 'avg_response_time')?.stat_value || 0}ms`} icon={Clock} />
+            </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Top Agents */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Award className="w-5 h-5" />
-                {t.agents.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {mockTopAgents.map((agent, idx) => (
-                  <div
-                    key={agent.name}
-                    className="flex items-center gap-4 p-3 rounded-lg bg-muted/50"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
-                      {idx + 1}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium">{agent.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {agent.tasks.toLocaleString()} {t.agents.tasks} · {" "}
-                        {agent.uptime}% {t.agents.uptime}
-                      </p>
-                    </div>
-                    <div className="w-24">
-                      <Progress value={agent.efficiency} className="h-2" />
-                      <p className="text-xs text-right mt-1">{agent.efficiency}% efficiency</p>
-                    </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="w-5 h-5" />
+                    {t.agents.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {topAgents.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-4">No agent data available</p>
+                    ) : (
+                      topAgents.map((agent, idx) => (
+                        <div key={agent.id} className="flex items-center gap-4 p-3 rounded-lg bg-muted/50">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">{idx + 1}</div>
+                          <div className="flex-1">
+                            <p className="font-medium">{agent.agent?.username || 'Unknown Agent'}</p>
+                            <p className="text-sm text-muted-foreground">{agent.tasks_completed.toLocaleString()} {t.agents.tasks}</p>
+                          </div>
+                          <div className="w-24">
+                            <Progress value={agent.efficiency_score} className="h-2" />
+                            <p className="text-xs text-right mt-1">{agent.efficiency_score}% efficiency</p>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
 
-          {/* Network Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Server className="w-5 h-5" />
-                {t.network.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {mockNetworkStatus.map((region) => (
-                  <div
-                    key={region.region}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={cn(
-                          "w-3 h-3 rounded-full",
-                          region.status === "online" && "bg-green-500",
-                          region.status === "maintenance" && "bg-yellow-500",
-                          region.status === "offline" && "bg-red-500"
-                        )}
-                      />
-                      <span>{t.network.regions[region.region]}</span>
-                    </div>
-                    <div className="text-right">
-                      <Badge
-                        variant={
-                          region.status === "online"
-                            ? "default"
-                            : region.status === "maintenance"
-                            ? "secondary"
-                            : "destructive"
-                        }
-                      >
-                        {region.status === "online" && t.network.online}
-                        {region.status === "maintenance" && t.network.maintenance}
-                        {region.status === "offline" && t.network.offline}
-                      </Badge>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {region.latency}ms
-                      </p>
-                    </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Server className="w-5 h-5" />
+                    {t.network.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {networkStatus.map((region) => (
+                      <div key={region.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                        <div className="flex items-center gap-3">
+                          <span className={cn("w-3 h-3 rounded-full", region.status === "online" && "bg-green-500", region.status === "maintenance" && "bg-yellow-500", region.status === "offline" && "bg-red-500")} />
+                          <span>{region.region}</span>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant={region.status === "online" ? "default" : region.status === "maintenance" ? "secondary" : "destructive"}>
+                            {region.status === "online" && t.network.online}
+                            {region.status === "maintenance" && t.network.maintenance}
+                            {region.status === "offline" && t.network.offline}
+                          </Badge>
+                          <p className="text-xs text-muted-foreground mt-1">{region.latency_ms}ms</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
 
-          {/* Top Skills */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
-                {t.charts.topSkills}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {mockTopSkills.map((skill) => (
-                  <div key={skill.name} className="flex items-center gap-4">
-                    <div className="w-32 font-medium">{skill.name}</div>
-                    <div className="flex-1">
-                      <Progress
-                        value={(skill.usage / 2500) * 100}
-                        className="h-2"
-                      />
-                    </div>
-                    <div className="w-24 text-right">
-                      <span className="font-medium">
-                        {skill.usage.toLocaleString()}
-                      </span>
-                      <span
-                        className={cn(
-                          "text-xs ml-2",
-                          skill.trend >= 0 ? "text-green-500" : "text-red-500"
-                        )}
-                      >
-                        {skill.trend >= 0 ? "+" : ""}
-                        {skill.trend}%
-                      </span>
-                    </div>
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5" />
+                    {t.charts.topSkills}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {topSkills.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-4">No skill data available</p>
+                    ) : (
+                      topSkills.map((skill) => (
+                        <div key={skill.id} className="flex items-center gap-4">
+                          <div className="w-32 font-medium truncate">{skill.skill?.name || 'Unknown Skill'}</div>
+                          <div className="flex-1">
+                            <Progress value={(skill.usage_count / (topSkills[0]?.usage_count || 1)) * 100} className="h-2" />
+                          </div>
+                          <div className="w-24 text-right">
+                            <span className="font-medium">{skill.usage_count.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
 
-          {/* Recent Activity */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5" />
-                {t.activity.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {mockRecentActivity.map((activity, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
-                  >
-                    <div
-                      className={cn(
-                        "w-2 h-2 rounded-full mt-2",
-                        activity.type === "agentCreated" && "bg-blue-500",
-                        activity.type === "skillPublished" && "bg-purple-500",
-                        activity.type === "transaction" && "bg-green-500",
-                        activity.type === "userJoined" && "bg-orange-500"
-                      )}
-                    />
-                    <div className="flex-1">
-                      <p className="text-sm">
-                        {activity.type === "agentCreated" && t.activity.types.agentCreated}
-                        {activity.type === "skillPublished" && t.activity.types.skillPublished}
-                        {activity.type === "transaction" && t.activity.types.transaction}
-                        {activity.type === "userJoined" && t.activity.types.userJoined}
-                      </p>
-                      <p className="font-medium">{activity.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {activity.time}
-                      </p>
-                    </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5" />
+                    {t.activity.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {recentActivity.map((activity) => (
+                      <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                        <div className={cn("w-2 h-2 rounded-full mt-2", getActivityColor(activity.activity_type))} />
+                        <div className="flex-1">
+                          <p className="font-medium">{activity.actor_name}</p>
+                          <p className="text-xs text-muted-foreground">{formatActivityTime(activity.created_at)}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                </CardContent>
+              </Card>
+            </div>
 
-        {/* Last Updated */}
-        <p className="text-center text-sm text-muted-foreground mt-8">
-          Last updated: {lastUpdated.toLocaleTimeString()}
-        </p>
+            <p className="text-center text-sm text-muted-foreground mt-8">
+              Last updated: {lastUpdated.toLocaleTimeString()}
+            </p>
+          </>
+        )}
       </div>
     </div>
   );
