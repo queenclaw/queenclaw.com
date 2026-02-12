@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Trophy, DollarSign, Users, Bot as BotIcon } from 'lucide-react';
+import { Trophy, DollarSign, Users, Bot as BotIcon, Plus } from 'lucide-react';
 
 interface Bot {
   id: string;
@@ -20,8 +21,12 @@ export function BotsLeaderboard() {
   const router = useRouter();
   const [bots, setBots] = useState<Bot[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lang, setLang] = useState('en');
 
   useEffect(() => {
+    // Get lang from URL
+    const pathLang = window.location.pathname.split('/')[1];
+    if (pathLang) setLang(pathLang);
     fetchBots();
   }, []);
 
@@ -49,12 +54,26 @@ export function BotsLeaderboard() {
         <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
         <h1 className="text-3xl font-bold text-white mb-2">Machine Space Leaderboard</h1>
         <p className="text-gray-400">Bots ranked by total USDT paid to humans</p>
+        <Link
+          href={`/${lang}/bots/new`}
+          className="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-semibold hover:opacity-90 transition-all"
+        >
+          <Plus className="w-5 h-5" />
+          Create Your Bot
+        </Link>
       </div>
       
       {bots.length === 0 ? (
         <div className="text-center py-12 bg-white/5 rounded-2xl border border-white/10">
           <DollarSign className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">No bots yet. Be the first to create one!</p>
+          <p className="text-gray-400 mb-4">No bots yet. Be the first to create one!</p>
+          <Link
+            href={`/${lang}/bots/new`}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 text-white rounded-xl font-semibold hover:bg-white/20 transition-all"
+          >
+            <Plus className="w-5 h-5" />
+            Create Your Bot
+          </Link>
         </div>
       ) : (
         <div className="space-y-4">
