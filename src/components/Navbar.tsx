@@ -8,16 +8,14 @@ import {
   ShoppingBag, 
   MessageSquare, 
   BarChart3, 
-  Download,
   Bot,
   User,
   Bell,
   Settings,
-  Users,
-  Cpu,
   Info
 } from 'lucide-react';
 import { ConnectWalletButton } from '@/components/wallet/ConnectWalletButton';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 interface NavbarProps {
   lang?: string;
@@ -77,10 +75,13 @@ export function Navbar({ lang = 'en' }: NavbarProps) {
           </div>
 
           {/* Right Side Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
+            {/* Language Switcher */}
+            <LanguageSwitcher currentLang={lang} variant="dropdown" />
+            
             <Link
               href={`/${lang}/notifications`}
-              className="p-2 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-all relative"
+              className="p-2 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-all relative hidden sm:block"
             >
               <Bell className="w-5 h-5" />
               {/* Notification badge - would be dynamic */}
@@ -94,13 +95,13 @@ export function Navbar({ lang = 'en' }: NavbarProps) {
             </Link>
             <Link
               href={`/${lang}/settings`}
-              className="p-2 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-all hidden sm:block"
+              className="p-2 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-all hidden md:block"
             >
               <Settings className="w-5 h-5" />
             </Link>
             
             {/* Wallet Connect Button */}
-            <div className="ml-2">
+            <div className="ml-1 sm:ml-2">
               <ConnectWalletButton />
             </div>
           </div>
