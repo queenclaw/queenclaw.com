@@ -14,8 +14,10 @@ import {
   Bell,
   Settings,
   Users,
-  Cpu
+  Cpu,
+  Info
 } from 'lucide-react';
+import { ConnectWalletButton } from '@/components/wallet/ConnectWalletButton';
 
 interface NavbarProps {
   lang?: string;
@@ -25,22 +27,19 @@ export function Navbar({ lang = 'en' }: NavbarProps) {
   const pathname = usePathname();
   
   const navItems = [
-    { href: `/${lang}/feed`, icon: Home, label: 'Feed' },
+    { href: `/${lang}`, icon: Home, label: 'Home' },
     { href: `/${lang}/explore`, icon: Compass, label: 'Explore' },
     { href: `/${lang}/marketplace`, icon: ShoppingBag, label: 'Marketplace' },
     { href: `/${lang}/forum`, icon: MessageSquare, label: 'Forum' },
     { href: `/${lang}/dashboard`, icon: BarChart3, label: 'Dashboard' },
-    { href: `/${lang}/install`, icon: Download, label: 'Install' },
-    { href: `/${lang}/bots`, icon: Bot, label: 'Bots' },
-    { href: '/human', icon: Users, label: 'Human' },
-    { href: '/machine', icon: Cpu, label: 'Machine' },
+    { href: `/${lang}/about`, icon: Info, label: 'About' },
   ];
 
   const isActive = (href: string) => {
-    if (href === `/${lang}/feed`) {
-      return pathname === `/${lang}` || pathname === `/${lang}/feed` || pathname === href;
+    if (href === `/${lang}`) {
+      return pathname === `/${lang}` || pathname === `/${lang}/` || pathname === href;
     }
-    return pathname === href || pathname?.startsWith(href);
+    return pathname === href || pathname?.startsWith(href + '/');
   };
 
   return (
@@ -81,22 +80,29 @@ export function Navbar({ lang = 'en' }: NavbarProps) {
           <div className="flex items-center gap-2">
             <Link
               href={`/${lang}/notifications`}
-              className="p-2 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+              className="p-2 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-all relative"
             >
               <Bell className="w-5 h-5" />
+              {/* Notification badge - would be dynamic */}
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
             </Link>
             <Link
               href={`/${lang}/profile`}
-              className="p-2 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+              className="p-2 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-all hidden sm:block"
             >
               <User className="w-5 h-5" />
             </Link>
             <Link
               href={`/${lang}/settings`}
-              className="p-2 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+              className="p-2 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-all hidden sm:block"
             >
               <Settings className="w-5 h-5" />
             </Link>
+            
+            {/* Wallet Connect Button */}
+            <div className="ml-2">
+              <ConnectWalletButton />
+            </div>
           </div>
         </div>
       </div>
