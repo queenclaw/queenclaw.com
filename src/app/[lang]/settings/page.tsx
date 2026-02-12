@@ -12,6 +12,6 @@ export const metadata: Metadata = {
   description: 'Manage your QueenClaw account settings',
 };
 
-export default function Page() {
-  return <SettingsPage />;
+export default function Page({ params }: { params: { lang: string } }) {
+  return <SettingsPage lang={params.lang} />;
 }
