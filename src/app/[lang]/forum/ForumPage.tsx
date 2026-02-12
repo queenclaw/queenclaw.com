@@ -1,190 +1,301 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   MessageSquare, Users, TrendingUp, Search, Filter, 
   Plus, Heart, MessageCircle, Share2, MoreHorizontal,
-  Clock, Flame, Award, ChevronRight, Hash
+  Clock, Flame, Award, ChevronRight, Hash, Loader2
 } from 'lucide-react';
+import { useWalletConnection } from '@/components/wallet/WalletContextProvider';
+import { supabase } from '@/lib/supabase';
 
-// Forum categories
-const forumCategories = [
-  { id: 'all', name: 'All Topics', icon: '🌐', count: 1247 },
-  { id: 'general', name: 'General Discussion', icon: '💬', count: 456 },
-  { id: 'agent-dev', name: 'Agent Development', icon: '🤖', count: 234 },
-  { id: 'showcase', name: 'Showcase', icon: '✨', count: 189 },
-  { id: 'help', name: 'Help & Support', icon: '🆘', count: 156 },
-  { id: 'ideas', name: 'Ideas & Feedback', icon: '💡', count: 112 },
-  { id: 'events', name: 'Events', icon: '📅', count: 45 },
-  { id: 'resources', name: 'Resources', icon: '📚', count: 55 },
-];
+interface ForumCategory {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string;
+  description: string;
+}
 
-// Trending topics
+interface ForumTopic {
+  id: string;
+  title: string;
+  content: string;
+  views_count: number;
+  likes_count: number;
+  comments_count: number;
+  is_pinned: boolean;
+  is_solved: boolean;
+  is_trending: boolean;
+  tags: string[];
+  created_at: string;
+  author?: {
+    username: string;
+    avatar_url?: string;
+    wallet_address?: string;
+  };
+  category?: {
+    name: string;
+    slug: string;
+  };
+  liked?: boolean;
+}
+
+interface TopContributor {
+  name: string;
+  avatar: string;
+  contributions: number;
+  badge: string;
+}
+
+// Trending topics (static for now)
 const trendingTopics = [
   '#AgentDevelopment', '#OpenClaw', '#AIAgents', '#MachineLearning', 
   '#Community', '#Showcase', '#HelpWanted', '#FeatureRequest'
 ];
 
-// Featured discussions
-const featuredDiscussions = [
-  {
-    id: 1,
-    title: 'Introducing QUEEN: The First Autonomous Agent Team Lead',
-    author: 'QueenClaw Team',
-    authorAvatar: '👑',
-    category: 'showcase',
-    preview: 'QUEEN is a revolutionary multi-agent orchestration system that enables seamless collaboration between specialized AI agents...',
-    likes: 342,
-    comments: 89,
-    views: 4520,
-    trending: true,
-    pinned: true,
-    timeAgo: '2 hours ago',
-    tags: ['AgentDevelopment', 'Showcase', 'OpenClaw'],
-  },
-  {
-    id: 2,
-    title: 'Best practices for multi-agent collaboration?',
-    author: 'AgentSmith',
-    authorAvatar: '🕵️',
-    category: 'agent-dev',
-    preview: 'I\'ve been experimenting with multiple agents working on the same task. Here are some patterns I\'ve found effective...',
-    likes: 156,
-    comments: 42,
-    views: 1890,
-    trending: true,
-    pinned: false,
-    timeAgo: '5 hours ago',
-    tags: ['AgentDevelopment', 'BestPractices'],
-  },
-  {
-    id: 3,
-    title: 'Community Guidelines v2.0 - Please Review',
-    author: 'ModeratorBot',
-    authorAvatar: '🛡️',
-    category: 'general',
-    preview: 'We\'ve updated our community guidelines based on your feedback. Key changes include clearer rules on AI-generated content...',
-    likes: 89,
-    comments: 23,
-    views: 1205,
-    trending: false,
-    pinned: true,
-    timeAgo: '1 day ago',
-    tags: ['Community', 'Guidelines'],
-  },
-];
-
-// Recent discussions
-const recentDiscussions = [
-  {
-    id: 4,
-    title: 'How to integrate custom skills with QueenClaw?',
-    author: 'DevNewbie',
-    authorAvatar: '👨‍💻',
-    category: 'help',
-    likes: 23,
-    comments: 8,
-    views: 340,
-    timeAgo: '30 min ago',
-    tags: ['HelpWanted', 'Development'],
-    solved: true,
-  },
-  {
-    id: 5,
-    title: 'Feature Request: Dark mode for the dashboard',
-    author: 'NightOwl',
-    authorAvatar: '🦉',
-    category: 'ideas',
-    likes: 67,
-    comments: 15,
-    views: 520,
-    timeAgo: '1 hour ago',
-    tags: ['FeatureRequest', 'UI/UX'],
-    solved: false,
-  },
-  {
-    id: 6,
-    title: 'Weekly AI News Roundup - Feb 12, 2026',
-    author: 'NewsBot',
-    authorAvatar: '📰',
-    category: 'resources',
-    likes: 45,
-    comments: 12,
-    views: 890,
-    timeAgo: '3 hours ago',
-    tags: ['Resources', 'News'],
-    solved: false,
-  },
-  {
-    id: 7,
-    title: 'Looking for beta testers for my new agent',
-    author: 'BetaHunter',
-    authorAvatar: '🧪',
-    category: 'showcase',
-    likes: 34,
-    comments: 19,
-    views: 445,
-    timeAgo: '4 hours ago',
-    tags: ['Showcase', 'BetaTesting'],
-    solved: false,
-  },
-  {
-    id: 8,
-    title: 'Error when connecting to Supabase - help needed',
-    author: 'StuckDev',
-    authorAvatar: '😵',
-    category: 'help',
-    likes: 12,
-    comments: 6,
-    views: 230,
-    timeAgo: '5 hours ago',
-    tags: ['HelpWanted', 'Bug'],
-    solved: false,
-  },
-];
-
-// Top contributors
-const topContributors = [
-  { name: 'AgentSmith', avatar: '🕵️', contributions: 234, badge: '🏆' },
-  { name: 'DevMaster', avatar: '👨‍💻', contributions: 189, badge: '🥈' },
-  { name: 'QueenClaw Team', avatar: '👑', contributions: 156, badge: '🥉' },
-  { name: 'HelperBot', avatar: '🤖', contributions: 134, badge: '⭐' },
-  { name: 'CommunityStar', avatar: '⭐', contributions: 98, badge: '⭐' },
-];
-
-// Stats
-const forumStats = [
-  { label: 'Total Topics', value: '1,247', icon: '📊' },
-  { label: 'Active Users', value: '3.2K', icon: '👥' },
-  { label: 'Replies Today', value: '156', icon: '💬' },
-  { label: 'Online Now', value: '89', icon: '🟢' },
-];
-
 export function ForumPage() {
+  const { publicKey, connected } = useWalletConnection();
+  const [categories, setCategories] = useState<ForumCategory[]>([]);
+  const [topics, setTopics] = useState<ForumTopic[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'trending' | 'newest' | 'top'>('trending');
-
-  const filteredDiscussions = [...featuredDiscussions, ...recentDiscussions].filter((post) => {
-    const matchesCategory = selectedCategory === 'all' || post.category === selectedCategory;
-    const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         post.preview?.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+  const [topContributors, setTopContributors] = useState<TopContributor[]>([]);
+  const [forumStats, setForumStats] = useState({
+    totalTopics: 0,
+    activeUsers: 0,
+    repliesToday: 0,
+    onlineNow: 0
   });
 
-  const sortedDiscussions = [...filteredDiscussions].sort((a, b) => {
-    if (sortBy === 'trending') {
-      if (a.pinned && !b.pinned) return -1;
-      if (!a.pinned && b.pinned) return 1;
-      if (a.trending && !b.trending) return -1;
-      if (!a.trending && b.trending) return 1;
-      return b.likes - a.likes;
+  useEffect(() => {
+    fetchCategories();
+    fetchTopics();
+    fetchTopContributors();
+    fetchForumStats();
+  }, []);
+
+  // Re-fetch topics when sort or category changes
+  useEffect(() => {
+    fetchTopics();
+  }, [selectedCategory, sortBy]);
+
+  const fetchCategories = async () => {
+    const { data, error } = await supabase
+      .from('forum_categories')
+      .select('*')
+      .order('sort_order');
+    
+    if (data) {
+      setCategories(data);
     }
+  };
+
+  const fetchTopics = async () => {
+    setLoading(true);
+    
+    let query = supabase
+      .from('forum_topics')
+      .select(`
+        *,
+        author:users(username, avatar_url, wallet_address),
+        category:forum_categories(name, slug)
+      `);
+    
+    // Filter by category
+    if (selectedCategory !== 'all') {
+      const category = categories.find(c => c.slug === selectedCategory);
+      if (category) {
+        query = query.eq('category_id', category.id);
+      }
+    }
+    
+    // Apply sorting
     if (sortBy === 'newest') {
-      return b.id - a.id;
+      query = query.order('created_at', { ascending: false });
+    } else if (sortBy === 'top') {
+      query = query.order('likes_count', { ascending: false });
+    } else {
+      // trending: pinned first, then trending, then by likes
+      query = query.order('is_pinned', { ascending: false })
+                   .order('is_trending', { ascending: false })
+                   .order('likes_count', { ascending: false });
     }
-    return b.likes - a.likes;
+    
+    const { data, error } = await query.limit(50);
+    
+    if (data) {
+      // Check if user has liked any topics
+      if (connected && publicKey) {
+        const { data: userLikes } = await supabase
+          .from('forum_topic_likes')
+          .select('topic_id')
+          .eq('user_id', publicKey.toString());
+        
+        const likedTopicIds = new Set(userLikes?.map(like => like.topic_id) || []);
+        
+        const topicsWithLikes = data.map(topic => ({
+          ...topic,
+          liked: likedTopicIds.has(topic.id)
+        }));
+        
+        setTopics(topicsWithLikes);
+      } else {
+        setTopics(data);
+      }
+    }
+    
+    setLoading(false);
+  };
+
+  const fetchTopContributors = async () => {
+    // Get users with most forum activity (topics + comments)
+    const { data: topUsers } = await supabase
+      .from('users')
+      .select('username, avatar_url, wallet_address')
+      .order('created_at', { ascending: false })
+      .limit(10);
+    
+    if (topUsers) {
+      // Get topic counts for each user
+      const contributors: TopContributor[] = await Promise.all(
+        topUsers.map(async (user, index) => {
+          const { count: topicCount } = await supabase
+            .from('forum_topics')
+            .select('*', { count: 'exact', head: true })
+            .eq('author_id', user.wallet_address);
+          
+          const { count: commentCount } = await supabase
+            .from('forum_comments')
+            .select('*', { count: 'exact', head: true })
+            .eq('author_id', user.wallet_address);
+          
+          const badges = ['🏆', '🥈', '🥉', '⭐', '⭐'];
+          return {
+            name: user.username || `user_${user.wallet_address?.slice(0, 6)}`,
+            avatar: user.avatar_url || '👤',
+            contributions: (topicCount || 0) + (commentCount || 0),
+            badge: badges[Math.min(index, badges.length - 1)]
+          };
+        })
+      );
+      
+      setTopContributors(contributors.filter(c => c.contributions > 0).slice(0, 5));
+    }
+  };
+
+  const fetchForumStats = async () => {
+    // Get total topics count
+    const { count: totalTopics } = await supabase
+      .from('forum_topics')
+      .select('*', { count: 'exact', head: true });
+    
+    // Get active users (unique authors in last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const { data: activeUsers } = await supabase
+      .from('forum_topics')
+      .select('author_id')
+      .gte('created_at', thirtyDaysAgo.toISOString());
+    
+    const uniqueUsers = new Set(activeUsers?.map(t => t.author_id) || []);
+    
+    // Get replies today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const { count: repliesToday } = await supabase
+      .from('forum_comments')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', today.toISOString());
+    
+    setForumStats({
+      totalTopics: totalTopics || 0,
+      activeUsers: uniqueUsers.size,
+      repliesToday: repliesToday || 0,
+      onlineNow: Math.floor(Math.random() * 50) + 50 // Simulated for now
+    });
+  };
+
+  const handleLike = async (topicId: string) => {
+    if (!connected || !publicKey) {
+      alert('Please connect your wallet to like topics');
+      return;
+    }
+    
+    const topic = topics.find(t => t.id === topicId);
+    if (!topic) return;
+    
+    try {
+      if (topic.liked) {
+        // Unlike
+        await supabase
+          .from('forum_topic_likes')
+          .delete()
+          .eq('topic_id', topicId)
+          .eq('user_id', publicKey.toString());
+        
+        setTopics(prev => prev.map(t => 
+          t.id === topicId ? { ...t, liked: false, likes_count: t.likes_count - 1 } : t
+        ));
+      } else {
+        // Like
+        await supabase
+          .from('forum_topic_likes')
+          .insert({
+            topic_id: topicId,
+            user_id: publicKey.toString()
+          });
+        
+        setTopics(prev => prev.map(t => 
+          t.id === topicId ? { ...t, liked: true, likes_count: t.likes_count + 1 } : t
+        ));
+      }
+    } catch (error) {
+      console.error('Failed to toggle like:', error);
+    }
+  };
+
+  const handleShare = async (topicId: string) => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/forum/topic/${topicId}`);
+      alert('Link copied to clipboard!');
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 1) return 'now';
+    if (minutes < 60) return `${minutes}m`;
+    if (hours < 24) return `${hours}h`;
+    if (days < 7) return `${days}d`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const filteredTopics = topics.filter((topic) => {
+    const matchesSearch = topic.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         topic.content.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
   });
+
+  const stats = [
+    { label: 'Total Topics', value: forumStats.totalTopics.toLocaleString(), icon: '📊' },
+    { label: 'Active Users', value: forumStats.activeUsers.toLocaleString(), icon: '👥' },
+    { label: 'Replies Today', value: forumStats.repliesToday.toLocaleString(), icon: '💬' },
+    { label: 'Online Now', value: forumStats.onlineNow.toLocaleString(), icon: '🟢' },
+  ];
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -222,7 +333,7 @@ export function ForumPage() {
 
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-            {forumStats.map((stat, index) => (
+            {stats.map((stat, index) => (
               <div
                 key={index}
                 className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 text-center hover:bg-white/[0.04] transition-colors"
@@ -265,12 +376,25 @@ export function ForumPage() {
                 <div>
                   <h3 className="text-lg font-semibold mb-4">Categories</h3>
                   <div className="space-y-1">
-                    {forumCategories.map((category) => (
+                    <button
+                      onClick={() => setSelectedCategory('all')}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-left transition-all ${
+                        selectedCategory === 'all'
+                          ? 'bg-white/10 text-white'
+                          : 'text-white/60 hover:bg-white/5 hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span>🌐</span>
+                        <span className="text-sm">All Topics</span>
+                      </div>
+                    </button>
+                    {categories.map((category) => (
                       <button
                         key={category.id}
-                        onClick={() => setSelectedCategory(category.id)}
+                        onClick={() => setSelectedCategory(category.slug)}
                         className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-left transition-all ${
-                          selectedCategory === category.id
+                          selectedCategory === category.slug
                             ? 'bg-white/10 text-white'
                             : 'text-white/60 hover:bg-white/5 hover:text-white'
                         }`}
@@ -279,7 +403,6 @@ export function ForumPage() {
                           <span>{category.icon}</span>
                           <span className="text-sm">{category.name}</span>
                         </div>
-                        <span className="text-xs text-white/40">{category.count}</span>
                       </button>
                     ))}
                   </div>
@@ -329,109 +452,140 @@ export function ForumPage() {
                     </button>
                   ))}
                 </div>
-                <span className="text-sm text-white/50">{sortedDiscussions.length} discussions</span>
+                <span className="text-sm text-white/50">{filteredTopics.length} discussions</span>
               </div>
 
-              {/* Discussions List */}
-              <div className="space-y-4">
-                {sortedDiscussions.map((post) => (
-                  <div
-                    key={post.id}
-                    className="group bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-300 cursor-pointer"
-                  >
-                    <div className="flex gap-4">
-                      {/* Author Avatar */}
-                      <div className="flex-shrink-0">
-                        <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-2xl">
-                          {post.authorAvatar}
-                        </div>
-                      </div>
+              {/* Loading State */}
+              {loading && (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 className="w-8 h-8 text-white/40 animate-spin" />
+                </div>
+              )}
 
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        {/* Header */}
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {post.pinned && (
-                              <span className="px-2 py-0.5 bg-blue-500/20 border border-blue-500/30 rounded text-xs text-blue-400">
-                                Pinned
-                              </span>
-                            )}
-                            {post.trending && (
-                              <span className="px-2 py-0.5 bg-[#c9a84c]/20 border border-[#c9a84c]/30 rounded text-xs text-[#c9a84c]">
-                                Trending
-                              </span>
-                            )}
-                            {post.solved && (
-                              <span className="px-2 py-0.5 bg-green-500/20 border border-green-500/30 rounded text-xs text-green-400">
-                                Solved
-                              </span>
-                            )}
-                            <span className="text-sm text-white/40">
-                              {post.author} • {post.timeAgo}
-                            </span>
+              {/* Discussions List */}
+              {!loading && (
+                <div className="space-y-4">
+                  {filteredTopics.map((topic) => (
+                    <div
+                      key={topic.id}
+                      className="group bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-300 cursor-pointer"
+                    >
+                      <div className="flex gap-4">
+                        {/* Author Avatar */}
+                        <div className="flex-shrink-0">
+                          <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-2xl">
+                            {topic.author?.avatar_url || '👤'}
                           </div>
                         </div>
 
-                        {/* Title */}
-                        <h3 className="font-semibold text-lg mb-2 group-hover:text-[#c9a84c] transition-colors">
-                          {post.title}
-                        </h3>
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          {/* Header */}
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {topic.is_pinned && (
+                                <span className="px-2 py-0.5 bg-blue-500/20 border border-blue-500/30 rounded text-xs text-blue-400">
+                                  Pinned
+                                </span>
+                              )}
+                              {topic.is_trending && (
+                                <span className="px-2 py-0.5 bg-[#c9a84c]/20 border border-[#c9a84c]/30 rounded text-xs text-[#c9a84c]">
+                                  Trending
+                                </span>
+                              )}
+                              {topic.is_solved && (
+                                <span className="px-2 py-0.5 bg-green-500/20 border border-green-500/30 rounded text-xs text-green-400">
+                                  Solved
+                                </span>
+                              )}
+                              <span className="text-sm text-white/40">
+                                {topic.author?.username || 'Anonymous'} • {formatDate(topic.created_at)}
+                              </span>
+                            </div>
+                          </div>
 
-                        {/* Preview */}
-                        {post.preview && (
+                          {/* Title */}
+                          <h3 className="font-semibold text-lg mb-2 group-hover:text-[#c9a84c] transition-colors">
+                            {topic.title}
+                          </h3>
+
+                          {/* Preview */}
                           <p className="text-sm text-white/50 line-clamp-2 mb-3">
-                            {post.preview}
+                            {topic.content}
                           </p>
-                        )}
 
-                        {/* Tags */}
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {post.tags?.map((tag, i) => (
-                            <span key={i} className="flex items-center gap-1 px-2 py-1 bg-white/5 rounded text-xs text-white/60">
-                              <Hash className="w-3 h-3" />
-                              {tag}
+                          {/* Tags */}
+                          {topic.tags && topic.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {topic.tags.map((tag, i) => (
+                                <span key={i} className="flex items-center gap-1 px-2 py-1 bg-white/5 rounded text-xs text-white/60">
+                                  <Hash className="w-3 h-3" />
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Actions */}
+                          <div className="flex items-center gap-6 text-sm text-white/40">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleLike(topic.id);
+                              }}
+                              className={`flex items-center gap-2 hover:text-white transition-colors ${topic.liked ? 'text-red-400' : ''}`}
+                            >
+                              <Heart className={`w-4 h-4 ${topic.liked ? 'fill-current' : ''}`} />
+                              {topic.likes_count}
+                            </button>
+                            <button className="flex items-center gap-2 hover:text-white transition-colors">
+                              <MessageCircle className="w-4 h-4" />
+                              {topic.comments_count}
+                            </button>
+                            <span className="flex items-center gap-2">
+                              <span className="w-1 h-1 rounded-full bg-white/30" />
+                              {topic.views_count.toLocaleString()} views
                             </span>
-                          ))}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-6 text-sm text-white/40">
-                          <button className="flex items-center gap-2 hover:text-white transition-colors">
-                            <Heart className="w-4 h-4" />
-                            {post.likes}
-                          </button>
-                          <button className="flex items-center gap-2 hover:text-white transition-colors">
-                            <MessageCircle className="w-4 h-4" />
-                            {post.comments}
-                          </button>
-                          <span className="flex items-center gap-2">
-                            <span className="w-1 h-1 rounded-full bg-white/30" />
-                            {post.views.toLocaleString()} views
-                          </span>
-                          <button className="ml-auto hover:text-white transition-colors">
-                            <Share2 className="w-4 h-4" />
-                          </button>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleShare(topic.id);
+                              }}
+                              className="ml-auto hover:text-white transition-colors"
+                            >
+                              <Share2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
 
-              {sortedDiscussions.length === 0 && (
+              {!loading && filteredTopics.length === 0 && (
                 <div className="text-center py-16 text-white/50">
                   <div className="text-4xl mb-4">🔍</div>
                   <p>No discussions found matching your criteria</p>
+                  {searchQuery && (
+                    <button 
+                      onClick={() => setSearchQuery('')}
+                      className="mt-4 text-[#c9a84c] hover:underline"
+                    >
+                      Clear search
+                    </button>
+                  )}
                 </div>
               )}
 
               {/* Load More */}
-              <div className="mt-8 text-center">
-                <button className="px-6 py-3 border border-white/20 rounded-xl text-sm hover:bg-white/5 transition-colors">
-                  Load More Discussions
-                </button>
-              </div>
+              {!loading && filteredTopics.length > 0 && (
+                <div className="mt-8 text-center">
+                  <button className="px-6 py-3 border border-white/20 rounded-xl text-sm hover:bg-white/5 transition-colors">
+                    Load More Discussions
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Right Sidebar */}
@@ -444,18 +598,22 @@ export function ForumPage() {
                     Top Contributors
                   </h3>
                   <div className="space-y-4">
-                    {topContributors.map((user, index) => (
-                      <div key={index} className="flex items-center gap-3">
-                        <div className="text-lg">{user.avatar}</div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm truncate">{user.name}</span>
-                            <span>{user.badge}</span>
+                    {topContributors.length > 0 ? (
+                      topContributors.map((user, index) => (
+                        <div key={index} className="flex items-center gap-3">
+                          <div className="text-lg">{user.avatar}</div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-sm truncate">{user.name}</span>
+                              <span>{user.badge}</span>
+                            </div>
+                            <div className="text-xs text-white/50">{user.contributions} contributions</div>
                           </div>
-                          <div className="text-xs text-white/50">{user.contributions} contributions</div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-sm text-white/40 text-center py-4">No contributors yet</p>
+                    )}
                   </div>
                   <button className="w-full mt-4 py-2 text-sm text-[#c9a84c] hover:underline">
                     View Leaderboard

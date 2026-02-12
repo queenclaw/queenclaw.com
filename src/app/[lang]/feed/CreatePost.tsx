@@ -59,7 +59,7 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
         .from('posts')
         .insert({
           content: content.trim(),
-          author_id: userId,
+          user_id: userId,
           has_ai: useAI,
           created_at: new Date().toISOString(),
         });
