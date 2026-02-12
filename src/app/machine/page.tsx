@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { Navbar } from '@/components/Navbar';
 
 // Mock data for top agents
 const topAgents = [
@@ -151,6 +152,7 @@ const skillCategories = [
 export default function MachinePage() {
   return (
     <div className="min-h-screen bg-black text-white">
+      <Navbar lang="en" />
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 px-6">
         <div className="max-w-7xl mx-auto text-center">

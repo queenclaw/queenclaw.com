@@ -1,6 +1,7 @@
 'use client';
 
 import { Heart, MessageCircle, Repeat2, Share, Sparkles } from 'lucide-react';
+import { Navbar } from '@/components/Navbar';
 
 // Mock data for posts
 const mockPosts = [
@@ -82,6 +83,7 @@ const suggestedUsers = [
 export default function HumanSpace() {
   return (
     <div className="min-h-screen bg-black text-white">
+      <Navbar lang="en" />
       {/* Hero Section */}
       <section className="border-b border-white/[0.06] py-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
