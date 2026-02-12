@@ -4,14 +4,17 @@ import { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Share, MoreHorizontal, Sparkles, Loader2 } from 'lucide-react';
 import { useWalletConnection } from '@/components/wallet/WalletContextProvider';
 import { supabase } from '@/lib/supabase';
+import { useNotificationActions, extractMentions, getUserIdByUsername } from '@/hooks/useNotificationActions';
 
 interface Post {
   id: string;
   content: string;
   created_at: string;
   likes_count: number;
+  author_id?: string;
   has_ai?: boolean;
   author?: {
+    id?: string;
     username: string;
     avatar_url?: string;
     wallet_address?: string;
@@ -25,6 +28,7 @@ interface PostCardProps {
 
 export function PostCard({ post, onUpdate }: PostCardProps) {
   const { publicKey, connected } = useWalletConnection();
+  const { notifyLike, notifyComment, notifyMention } = useNotificationActions();
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes_count || 0);
   const [isLiking, setIsLiking] = useState(false);
@@ -32,8 +36,9 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // Check if user has liked this post
+  // Check if user has liked this post and get current user ID
   useEffect(() => {
     const checkLikeStatus = async () => {
       if (!connected || !publicKey) return;
@@ -46,6 +51,8 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
         .single();
       
       if (!userData) return;
+      
+      setCurrentUserId(userData.id);
       
       const { data } = await supabase
         .from('post_likes')
@@ -124,6 +131,11 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
         
         setLikesCount(prev => prev + 1);
         setLiked(true);
+        
+        // Send notification to post author
+        if (post.author_id && post.author_id !== userData.id) {
+          await notifyLike(post.author_id, userData.id, post.id, post.content);
+        }
       }
       
       onUpdate?.();
@@ -135,30 +147,34 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
   };
 
   const handleSubmitComment = async () => {
-    if (!newComment.trim() || !connected || !publicKey) return;
+    if (!newComment.trim() || !connected || !publicKey || !currentUserId) return;
     
     setIsSubmittingComment(true);
     
     try {
-      // Get user ID
-      const { data: userData } = await supabase
-        .from('users')
-        .select('id')
-        .eq('wallet_address', publicKey.toString())
-        .single();
-      
-      if (!userData) {
-        alert('User not found. Please try again.');
-        return;
-      }
-      
-      await supabase
+      const { error } = await supabase
         .from('comments')
         .insert({
           post_id: post.id,
           content: newComment.trim(),
-          author_id: userData.id,
+          author_id: currentUserId,
         });
+      
+      if (error) throw error;
+      
+      // Notify post author
+      if (post.author_id && post.author_id !== currentUserId) {
+        await notifyComment(post.author_id, currentUserId, post.id, newComment.trim());
+      }
+      
+      // Notify mentioned users
+      const mentions = extractMentions(newComment.trim());
+      for (const username of mentions) {
+        const mentionedUserId = await getUserIdByUsername(username);
+        if (mentionedUserId && mentionedUserId !== currentUserId && mentionedUserId !== post.author_id) {
+          await notifyMention(mentionedUserId, currentUserId, post.id, newComment.trim());
+        }
+      }
       
       setNewComment('');
       fetchComments();
